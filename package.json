@@ -1,0 +1,40 @@
+{
+	"name": "yare-bot-template",
+	"version": "1.2.2",
+	"description": "A template for Yare bots.",
+	"author": "Jules Bertholet",
+	"license": "MIT",
+	"main": "bot.js",
+	"scripts": {
+		"build": "yarn run webpack --mode=development ",
+		"build:min": "yarn run webpack --mode=production --output-filename bot.min.js",
+		"lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
+		"lint:fix": "yarn lint --fix",
+		"serve:base": "bash -c 'cd node_modules/yare-code-sync; nvm i; npm i; npx grunt'",
+		"serve": "env CUSTOM_CODE_PATH=../../dist/bot.js yarn serve:base",
+		"serve:min": "env CUSTOM_CODE_PATH=../../dist/bot.min.js yarn serve:base",
+		"watch": "bash -c 'yarn build --watch & watchPid=\"$!\" ; yarn serve ; kill ${watchPid}'",
+		"watch:min": "bash -c 'yarn build:min --watch & watchPid=\"$!\" ; yarn serve:min ; kill ${watchPid}'"
+	},
+	"devDependencies": {
+		"@babel/cli": "^7.14.5",
+		"@babel/core": "^7.14.5",
+		"@babel/preset-env": "^7.14.5",
+		"@babel/preset-typescript": "^7.14.5",
+		"@tsconfig/node14": "^1.0.1",
+		"@typescript-eslint/eslint-plugin": "^4.26.1",
+		"@typescript-eslint/parser": "^4.26.1",
+		"babel-loader": "^8.2.2",
+		"eslint": "^7.28.0",
+		"eslint-plugin-smarter-tabs": "^1.2.0",
+		"fork-ts-checker-webpack-plugin": "^6.2.10",
+		"ts-loader": "^9.2.3",
+		"typescript": "^4.3.2",
+		"webpack": "^5.38.1",
+		"webpack-cli": "^4.7.2"
+	},
+	"dependencies": {
+		"core-js": "^3.14.0",
+		"yare-code-sync": "git://github.com/arikwex/yare-code-sync.git"
+	}
+}

@@ -1,0 +1,6 @@
+node_modules
+dist
+coverage
+webpack.config.js
+.eslintrc.js
+options.js
