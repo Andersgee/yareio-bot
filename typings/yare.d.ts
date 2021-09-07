@@ -216,7 +216,7 @@ declare interface Base {
   player_id: string;
 
   /**
-   * not mentioned in docs.
+   * not mentioned in docs. but "circles", "squares" or "triangles"
    */
   shape: string;
 }
