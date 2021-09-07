@@ -1,18 +1,15 @@
 import { ships_at_positions, ships_not_in, ship_closest } from "./find";
 import { n_sustainable_starfarmorders, n_FULL_starfarmorders } from "./utils";
-import getCollections from "./collections";
-import getPoints from "./points_of_interest";
+import collections from "./collections";
+import points from "./points_of_interest";
 import { isWithinDist, offset } from "./vec";
-
-const collections = getCollections();
-const points = getPoints();
 
 function hasAnyInRange(ships: Ships, p: Vec2): boolean {
   return ships.filter((s) => isWithinDist(s.position, p, 200)).length > 0;
 }
 
-export default function move_farm(G: Graph, busy: Vec): Vec {
-  const { stars, myships, info } = collections;
+export default function move_farm(busy: Vec): Vec {
+  const { stars, myships } = collections;
 
   //const hasHipsNearHomeeStar = myships.filter(s=>isWithinDist(s.position, stars.me.position, 200)).length>0
   //Determine if its worth positioning in chain or if should just swarm the point near star
@@ -30,11 +27,11 @@ export default function move_farm(G: Graph, busy: Vec): Vec {
   for (let n = 0; n < Math.max(N_me, N_middle); n++) {
     //fill home and middle farming evenly, but start with home
     if (i < N_me) {
-      move_homefarm(G, busy);
+      move_homefarm(busy);
       i += 1;
     }
     if (j < N_middle) {
-      move_middlefarm(G, busy, onlyMoveToMiddlestar);
+      move_middlefarm(busy, onlyMoveToMiddlestar);
       j += 1;
     }
   }
@@ -53,7 +50,7 @@ export default function move_farm(G: Graph, busy: Vec): Vec {
 /**
  * Move 4 ships but only if available
  */
-function move_homefarm(G: Graph, busy: Vec): void {
+function move_homefarm(busy: Vec): void {
   const { myships } = collections;
   if (ships_not_in(myships, busy).length < 4) {
     return;
@@ -72,7 +69,7 @@ function move_homefarm(G: Graph, busy: Vec): void {
 /**
  * Move 4 ships but only if available
  */
-function move_middlefarm(G: Graph, busy: Vec, onlyMoveToStar = false): void {
+function move_middlefarm(busy: Vec, onlyMoveToStar = false): void {
   const { myships } = collections;
   if (ships_not_in(myships, busy).length < 4) {
     return;
@@ -95,7 +92,7 @@ function move_middlefarm(G: Graph, busy: Vec, onlyMoveToStar = false): void {
  * Move 1,2 or 3 ships but dont make them busy.
  */
 function move_homefarm_prepare(busy: Vec, preparing: Vec): void {
-  const { myships, bases } = collections;
+  const { myships } = collections;
 
   const p = points.homefarm;
   const p_almoststar = offset(p.star, p.between, 20);

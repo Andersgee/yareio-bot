@@ -1,28 +1,10 @@
 import { isWithinDist } from "./vec";
 import { constructGraph, path_byclosestavailabledestination } from "./graph";
 import { ships_not_in } from "./find";
+import collections from "./collections";
+import { isFull, notEmpty, notFull } from "./utils";
 
-function notEmpty(ship: Ship) {
-  return ship.energy > 0;
-}
-
-function notFull(ship: Ship) {
-  return ship.energy < ship.energy_capacity;
-}
-
-function isFull(s: Ship | Star) {
-  return s.energy === s.energy_capacity;
-}
-
-function isEmpty(ship: Ship) {
-  return ship.energy === 0;
-}
-
-export default function energize_farm(
-  collections: Collections,
-  G: Graph,
-  busy: Vec
-): void {
+export default function energize_farm(busy: Vec): void {
   const { stars } = collections;
 
   //start ships trying to stay full at some point
@@ -31,20 +13,16 @@ export default function energize_farm(
   //const stayfull_home = tick > 200;
   const stayfull_mid = true;
 
-  energize_star2base(collections, stars.me, busy, stayfull_home);
-  energize_star2base(collections, stars.middle, busy, stayfull_mid);
+  energize_star2base(stars.me, busy, stayfull_home);
+  energize_star2base(stars.middle, busy, stayfull_mid);
   //energize_star2base(collections, stars.enemy, busy, stayfull_mid);
 
   if (tick < 123) {
-    energize_any2base(collections, stars.enemy, busy);
+    energize_any2base(stars.enemy, busy);
   }
 }
 
-function energize_any2base(
-  collections: Collections,
-  star: Star,
-  busy: Vec
-): void {
+function energize_any2base(star: Star, busy: Vec): void {
   const { myships, bases } = collections;
   const base = bases.me;
 
@@ -94,12 +72,7 @@ function energize_any2base(
   }
 }
 
-function energize_star2base(
-  collections: Collections,
-  star: Star,
-  busy: Vec,
-  stayfull = false
-): void {
+function energize_star2base(star: Star, busy: Vec, stayfull = false): void {
   const { myships, bases } = collections;
   const base = bases.me;
 

@@ -1,12 +1,9 @@
 import { ships_not_in } from "./find";
-import getCollections from "./collections";
-import getPoints from "./points_of_interest";
+import collections from "./collections";
+import points from "./points_of_interest";
 import { offset, sum } from "./vec";
 
-const collections = getCollections();
-const points = getPoints();
-
-export default function move_strategic(G: Graph, busy: Vec): void {
+export default function move_strategic(busy: Vec): void {
   const { myships, enemyships, info, outposts, bases } = collections;
 
   const sumMyEnergy = sum(myships.map((s) => s.energy));

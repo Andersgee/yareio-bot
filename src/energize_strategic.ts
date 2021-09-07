@@ -1,8 +1,6 @@
-import getCollections from "./collections";
+import collections from "./collections";
 import { isWithinDist } from "./vec";
 import { isFull } from "./utils";
-
-const collections = getCollections();
 
 export default function energize_strategic(): void {
   const { myships, outposts, info } = collections;

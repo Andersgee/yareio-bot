@@ -1,17 +1,14 @@
 import { ships_not_in } from "./find";
-import { isWithinDist, sum } from "./vec";
-import { attackdmg, lossFromAttacking } from "./utils";
+import { isWithinDist } from "./vec";
+import { attackdmg } from "./utils";
+import collections from "./collections";
 
-export default function energize_combat(
-  collections: Collections,
-  G: Graph,
-  busy: Vec
-): void {
-  energize_enemybase(collections);
-  energize_enemiesinrange(collections);
+export default function energize_combat(): void {
+  energize_enemybase();
+  energize_enemiesinrange();
 }
 
-function energize_enemybase(collections: Collections) {
+function energize_enemybase() {
   const { myships, bases } = collections;
   for (const ship of myships) {
     const isNearEnemybase = isWithinDist(
@@ -27,8 +24,8 @@ function energize_enemybase(collections: Collections) {
 /**
  * Auto attack enemies in range, but in a way that does not overkill an enemy.
  */
-function energize_enemiesinrange(collections: Collections) {
-  const { myships, enemyships } = collections;
+function energize_enemiesinrange() {
+  const { enemyships } = collections;
 
   const alreadyfiring_indexes: number[] = [];
   for (const enemyship of enemyships) {
@@ -42,7 +39,7 @@ function energize_enemiesinrange(collections: Collections) {
     );
 
     //how much dmg could I do if all available fired on this enemyship
-    const myAvailableships_totaldmg = sum(myAvailableships.map(attackdmg));
+    //const myAvailableships_totaldmg = sum(myAvailableships.map(attackdmg));
 
     //const couldKillEnemyship = myAvailableships_totaldamage > enemyship.energy
 
@@ -50,7 +47,7 @@ function energize_enemiesinrange(collections: Collections) {
     const enemyshipEnergy = enemyship.energy; //enemyship might get healed, so just go with the basic
 
     //note: ship dies when it hits Negative energy after an attack.
-    const couldKillEnemyship = myAvailableships_totaldmg > enemyshipEnergy;
+    //const couldKillEnemyship = myAvailableships_totaldmg > enemyshipEnergy;
 
     //now lets select required number of ships and add them to alreadyfiring
     //note I always lose shiplossFromAttacking regardless of target.energy

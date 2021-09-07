@@ -1,7 +1,19 @@
 import { sum } from "./vec";
 
-export function isFull(s: Ship | Star) {
+export function isFull(s: Ship | Star): boolean {
   return s.energy === s.energy_capacity;
+}
+
+export function notEmpty(ship: Ship): boolean {
+  return ship.energy > 0;
+}
+
+export function notFull(ship: Ship): boolean {
+  return ship.energy < ship.energy_capacity;
+}
+
+export function isEmpty(ship: Ship): boolean {
+  return ship.energy === 0;
 }
 
 /**
@@ -16,7 +28,10 @@ export function stargain(starenergy: number): number {
  *
  * note: each starfarmorder creates 1 CONTINOUSLY farming ship. (but occupies 4)
  */
-export function n_sustainable_starfarmorders(star: Star, shipsize: number) {
+export function n_sustainable_starfarmorders(
+  star: Star,
+  shipsize: number
+): number {
   const gain = stargain(star.energy);
   for (let n = 1; n < 100; n++) {
     const expected_stargain = gain - n * shipsize;
@@ -30,7 +45,7 @@ export function n_sustainable_starfarmorders(star: Star, shipsize: number) {
 /**
  * same as n_sustainable_starfarmorders BUT ASSUME STAR IS FULL
  */
-export function n_FULL_starfarmorders(star: Star, shipsize: number) {
+export function n_FULL_starfarmorders(star: Star, shipsize: number): number {
   const gain = stargain(star.energy_capacity);
   for (let n = 1; n < 100; n++) {
     const expected_stargain = gain - n * shipsize;
@@ -49,7 +64,7 @@ export function attackdmg(ship: Ship): number {
   return 2 * Math.min(ship.size, ship.energy);
 }
 
-export function outpostdmg(outpost: Outpost) {
+export function outpostdmg(outpost: Outpost): number {
   return outpost.energy < 500 ? 2 : 8;
 }
 

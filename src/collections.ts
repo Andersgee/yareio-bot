@@ -1,6 +1,9 @@
 import { dist, isWithinDist, minimum } from "./vec";
 
-export default function getCollections(): Collections {
+const collections = getCollections();
+export default collections;
+
+function getCollections(): Collections {
   const playerids = getPlayerIds();
   const shapes = getShapes();
   const bases = getBases();

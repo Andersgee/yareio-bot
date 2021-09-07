@@ -1,18 +1,16 @@
-import getCollections from "./collections";
-import { dist, isWithinDist, minimum, mix, offset, sum } from "./vec";
+import collections from "./collections";
+import { isWithinDist, mix, offset } from "./vec";
 import { attackdmg, lossFromAttacking, weightedmeanposition } from "./utils";
 import { ships_not_in } from "./find";
 
-const collections = getCollections();
-
-export default function move_combat(G: Graph): void {
+export default function move_combat(): void {
   //override earlier with later
   dont_walk_into_stuff(); //1.
   move_toward_help_if_needed(); //2.
 }
 
 function dont_walk_into_stuff() {
-  const { myships, enemyships } = collections;
+  const { myships } = collections;
   for (const ship of myships) {
     if (ship.nearbyenemies.length > 0) {
       if (ship.nearbyfriends.length > 0) {

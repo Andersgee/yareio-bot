@@ -1,20 +1,15 @@
-import getCollections from "./collections";
+import collections from "./collections";
 import { dist, intersectTwoCircles, mix, offset } from "./vec";
 
-const collections = getCollections();
+const points_of_interest = getPoints();
+export default points_of_interest;
 
-export default function getPoints() {
-  const { stars, outposts, bases } = collections;
-  const base = bases.me.position;
-  const homestar = stars.me.position;
-  const middlestar = stars.middle.position;
-  const outpost = outposts.middle.position;
-
+function getPoints() {
   const points = {
     homefarm: homefarmpoints(),
     middlefarm: middlefarmpoints(),
-    middle: insideMiddlestarInsideOutpost(base, middlestar, outpost),
-    middle_outside: insideMiddlestarOutsideOutpost(base, middlestar, outpost),
+    middle: insideMiddlestarInsideOutpost(),
+    middle_outside: insideMiddlestarOutsideOutpost(),
   };
   return points;
 }
@@ -85,34 +80,31 @@ function homefarmpoints_offset() {
 }
 
 function middlefarmpoints_inside() {
-  const { bases, stars, outposts } = collections;
+  const { bases } = collections;
   const base = bases.me.position;
-  const middlestar = stars.middle.position;
-  const outpost = outposts.middle.position;
 
-  const a = insideMiddlestarInsideOutpost(base, middlestar, outpost).me;
+  const a = insideMiddlestarInsideOutpost().me;
   const b = offset(base, a, 199);
   const c = mix(a, b);
   return { star: a, between: c, base: b };
 }
 
 function middlefarmpoints_outside() {
-  const { bases, stars, outposts } = collections;
+  const { bases } = collections;
   const base = bases.me.position;
-  const middlestar = stars.middle.position;
-  const outpost = outposts.middle.position;
 
-  const a = insideMiddlestarOutsideOutpost(base, middlestar, outpost).me;
+  const a = insideMiddlestarOutsideOutpost().me;
   const b = offset(base, a, 199);
   const c = mix(a, b);
   return { star: a, between: c, base: b };
 }
 
-function insideMiddlestarInsideOutpost(
-  base: Vec2,
-  middlestar: Vec2,
-  outpost: Vec2
-) {
+function insideMiddlestarInsideOutpost() {
+  const { bases, stars, outposts } = collections;
+  const base = bases.me.position;
+  const middlestar = stars.middle.position;
+  const outpost = outposts.middle.position;
+
   const pmid = intersectTwoCircles(middlestar, 199, outpost, 199); //in range of both star and outpost
   const d0 = dist(base, pmid[0]);
   const d1 = dist(base, pmid[1]);
@@ -126,11 +118,12 @@ function insideMiddlestarInsideOutpost(
   };
 }
 
-function insideMiddlestarOutsideOutpost(
-  base: Vec2,
-  middlestar: Vec2,
-  outpost: Vec2
-) {
+function insideMiddlestarOutsideOutpost() {
+  const { bases, stars, outposts } = collections;
+  const base = bases.me.position;
+  const middlestar = stars.middle.position;
+  const outpost = outposts.middle.position;
+
   const pmid = intersectTwoCircles(middlestar, 199, outpost, 401); //in range of star but outside short range of outpost
   const d0 = dist(base, pmid[0]);
   const d1 = dist(base, pmid[1]);
