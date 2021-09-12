@@ -1,8 +1,13 @@
+declare type Vec2s = Vec2[];
+
 declare type Vec = number[];
 declare type Graph = Map<number, Vec>;
 
 declare const collections: Collections;
 declare const points: Points;
+
+declare type target = Ship | Base | Outpost | Star;
+declare type targets = target[];
 
 interface Points {
   homefarm: Vec2[];
@@ -57,11 +62,20 @@ interface Ship extends Spirit {
    * Friendly ships in range (without self).
    */
   nearbyfriends: Ships;
+  /**
+   * Friendly ships in range (including self).
+   */
+  nearbyfriends_includingself: Ships;
 
   /**
    * Enemy ships in range.
    */
   nearbyenemies: Ships;
+
+  /**
+   * Enemy ships in 400 range.
+   */
+  nearbyenemies400: Ships;
 }
 
 declare type Ships = Ship[];

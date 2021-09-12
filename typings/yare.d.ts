@@ -3,7 +3,7 @@
 declare type Vec2 = [x: number, y: number];
 
 //Game's global variables
-declare const memory: Record<string, unknown>; //Empty object. Use it to store values across ticks
+declare const memory: { gamestage: number }; //Empty object. Use it to store values across ticks
 declare const base: Base; //object, Your base
 declare const enemy_base: Base; //object, Enemy base
 declare const star_zxq: Star; //object, Top-left corner star

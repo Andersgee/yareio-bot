@@ -67,9 +67,15 @@ function getShips() {
     ship.nearbyfriends = myships.filter(
       (s) => s.index !== index && isWithinDist(ship.position, s.position, 200)
     );
+    ship.nearbyfriends_includingself = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 200)
+    );
 
     ship.nearbyenemies = enemyships.filter((s) =>
       isWithinDist(ship.position, s.position, 200)
+    );
+    ship.nearbyenemies400 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 400)
     );
 
     const allfriends = myships.filter((s) => s.index !== index); //all myships except self
@@ -87,11 +93,19 @@ function getShips() {
   //enemyships
   for (const [index, ship] of enemyships.entries()) {
     ship.index = index;
+
     ship.nearbyfriends = enemyships.filter(
       (s) => s.index !== index && isWithinDist(ship.position, s.position, 200)
     );
+    ship.nearbyfriends_includingself = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 200)
+    );
+
     ship.nearbyenemies = myships.filter((s) =>
       isWithinDist(ship.position, s.position, 200)
+    );
+    ship.nearbyenemies400 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 400)
     );
 
     const allfriends = enemyships.filter((s) => s.index !== index); //all myships except self

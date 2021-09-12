@@ -9,13 +9,17 @@ import {
 } from "./vec";
 import { shipFromIndex } from "./find";
 
+import collections from "./collections";
+const G = constructGraph(collections.myships);
+export default G;
+
 /**
  * ```raw
  * Get the ships that make the shortest transfer path from src
  * to the FIRST reachable destination of destinations.
  *
  *
- * Return a vector [ship1, ship2, dest] (without src as first)
+ * Return a vector [src,ship1, ship2, dest]
  * or empty vector [] if no path exist to any of the desinations
  * ```
  */
@@ -42,7 +46,7 @@ export function path_firstavailable(
  * (as compared by distance from src to destination)
  *
  *
- * Return a vector [ship1, ship2, dest] (without src as first)
+ * Return a vector [src,ship1, ship2, dest]
  * or empty vector [] if no path exist to any of the desinations
  * ```
  */
@@ -79,12 +83,17 @@ export function path_byclosestavailabledestination(
  * ```raw
  * Get the ships that make the shortest transfer path from src to dest
  *
- * Return a vector [ship1, ship2, dest] (without src as first)
+ * Return a vector [src, ship1, ship2, dest]
  * or empty vector [] if no path exist to dest
  * ```
  */
-export function path(ships: Ships, G: Graph, src: Ship, dest: Ship): Ships {
-  const indexes = indexpath(G, src.index, dest.index);
+export function path(
+  ships: Ships,
+  G: Graph,
+  srcship: Ship,
+  destship: Ship
+): Ships {
+  const indexes = indexpath(G, srcship.index, destship.index);
   const pathships: Ships = indexes.map((i) => shipFromIndex(ships, i));
   return pathships;
 }
@@ -93,11 +102,11 @@ export function path(ships: Ships, G: Graph, src: Ship, dest: Ship): Ships {
  * ```raw
  * Find shortest path between ship.index=src and ship.index=dest.
  *
- * Returns a vector of ship indexes [a,b,c,dest] of which ship indexes are between src and dest. (without src)
+ * Returns a vector of ship indexes [src, a,b,c,dest] of which ship indexes are between src and dest.
  * (Returns empty vector [] if no path exists)
  * ```
  */
-function indexpath(G: Graph, src: number, dest: number): Vec {
+export function indexpath(G: Graph, src: number, dest: number): Vec {
   const prev = solve(G, src, dest);
   return reconstructPath(prev, src, dest);
 }
@@ -141,9 +150,10 @@ function reconstructPath(prev: Vec, src: number, dest: number): Vec {
   }
 
   if (path[0] === src) {
-    //If there is a path between src and dest, first itme will be equal to src
+    //If there is a path between src and dest, first item will be equal to src
     //However, dont actually keep self as first...
-    return path.slice(1);
+    //return path.slice(1);
+    return path;
   } else {
     return [];
   }

@@ -1,25 +1,105 @@
 import collections from "./collections";
-import { dist, intersectTwoCircles, mix, offset } from "./vec";
+import { myOutpostEnergy } from "./utils";
+import {
+  dist,
+  intersectTwoCircles,
+  mix,
+  nearestPointOfPoints,
+  offset,
+} from "./vec";
+
+const D = 199.999;
 
 const points_of_interest = getPoints();
 export default points_of_interest;
 
 function getPoints() {
-  const points = {
+  return {
     homefarm: homefarmpoints(),
     middlefarm: middlefarmpoints(),
+    middlefarm_outside: middlefarmpoints_outside(),
     middle: insideMiddlestarInsideOutpost(),
     middle_outside: insideMiddlestarOutsideOutpost(),
+    enemyfarm: enemyfarmpoints_straight(),
+    enemybase: enemybasepoints(),
+    star2middlefarm: star2middlefarm(),
   };
-  return points;
 }
 
 function homefarmpoints() {
-  if (tick < 140) {
-    return homefarmpoints_straight();
-  } else {
-    return homefarmpoints_offset().forward;
-  }
+  const { bases, stars } = collections;
+  const o = 60; //offset away from straight line
+  const pf = offset(bases.me.position, bases.enemy.position, o);
+  const p0f = offset(stars.me.position, pf, D);
+  const p1f = offset(p0f, pf, D);
+  const p2f = offset(p1f, pf, D);
+  const forward = {
+    star: p0f,
+    between: p1f,
+    base: p2f,
+  };
+
+  const pb = offset(bases.me.position, bases.enemy.position, -o);
+  const p0b = offset(stars.me.position, pb, D);
+  const p1b = offset(p0b, pb, D);
+  const p2b = offset(p1b, pb, D);
+  const backward = {
+    star: p0b,
+    between: p1b,
+    base: p2b,
+  };
+
+  return { forward, backward };
+}
+
+function star2middlefarm(): {
+  home: {
+    star: Vec2;
+    between: Vec2;
+    base: Vec2;
+  };
+  mid: {
+    starforward: Vec2;
+    star: Vec2;
+    between: Vec2;
+    base: Vec2;
+  };
+} {
+  const { stars, bases } = collections;
+
+  const centerpoints = insideMiddlestarInsideOutpost();
+  const middle = centerpoints.me;
+  const forwardmiddle = centerpoints.between;
+
+  const star = offset(stars.me.position, middle, D); //near star
+  const between = offset(star, middle, D); //between
+  const base = offset(bases.me.position, between, D);
+
+  const base2 = nearestPointOfPoints(
+    intersectTwoCircles(bases.me.position, D, base, D),
+    stars.middle.position
+  );
+  const between1 = offset(base2, middle, D);
+
+  const home = { star, between, base };
+  const mid = {
+    starforward: myOutpostEnergy() > 500 ? forwardmiddle : middle,
+    star: middle,
+    between: between1,
+    base: base2,
+  };
+  return { home, mid };
+}
+
+function enemybasepoints() {
+  const { bases } = collections;
+  const a = offset(bases.enemy.position, bases.me.position, 199);
+  const b = offset(bases.enemy.position, bases.me.position, 399);
+
+  return {
+    inrange: a,
+    insight: b,
+  };
 }
 
 function middlefarmpoints() {
@@ -31,10 +111,10 @@ function middlefarmpoints() {
   }
 }
 
-function homefarmpoints_straight() {
+function enemyfarmpoints_straight() {
   const { bases, stars } = collections;
-  const base = bases.me.position;
-  const homestar = stars.me.position;
+  const base = bases.enemy.position;
+  const homestar = stars.enemy.position;
 
   const a = offset(homestar, base, 199); //star
   const b = offset(base, a, 199); //base
@@ -45,38 +125,6 @@ function homefarmpoints_straight() {
     between: c,
     base: b,
   };
-}
-
-function homefarmpoints_offset() {
-  const { bases, stars, outposts } = collections;
-  const base = bases.me.position;
-  const homestar = stars.me.position;
-  const outpost = outposts.middle.position;
-
-  const ps = intersectTwoCircles(base, 199, homestar, 199 * 3);
-  const d0 = dist(outpost, ps[0]);
-  const d1 = dist(outpost, ps[1]);
-  const base_forward = d0 < d1 ? ps[0] : ps[1]; //the point nearer outpost
-  const base_backward = d0 < d1 ? ps[1] : ps[0];
-
-  const between_forward = offset(base_forward, homestar, 199);
-  const between_backward = offset(base_backward, homestar, 199);
-
-  const star_forward = offset(homestar, base_forward, 199);
-  const star_backward = offset(homestar, base_backward, 199);
-
-  const forward = {
-    star: star_forward,
-    between: between_forward,
-    base: base_forward,
-  };
-  const backward = {
-    star: star_backward,
-    between: between_backward,
-    base: base_backward,
-  };
-
-  return { forward, backward };
 }
 
 function middlefarmpoints_inside() {
@@ -105,7 +153,9 @@ function insideMiddlestarInsideOutpost() {
   const middlestar = stars.middle.position;
   const outpost = outposts.middle.position;
 
-  const pmid = intersectTwoCircles(middlestar, 199, outpost, 199); //in range of both star and outpost
+  const D = 199.999;
+
+  const pmid = intersectTwoCircles(middlestar, D, outpost, D); //in range of both star and outpost
   const d0 = dist(base, pmid[0]);
   const d1 = dist(base, pmid[1]);
   const pmid_me = d0 < d1 ? pmid[0] : pmid[1];

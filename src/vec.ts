@@ -36,10 +36,14 @@ export function dist(p1: Vec2, p2: Vec2): number {
 }
 
 /**
- * True if distance between p1 and p2 is less than or equal to d.
+ * ```raw
+ * True if distance between p1 and p2 is less than d.
+ *
+ * default d=200 which is ship range
+ * ```
  */
-export function isWithinDist(p1: Vec2, p2: Vec2, d: number): boolean {
-  return dist(p1, p2) <= d;
+export function isWithinDist(p1: Vec2, p2: Vec2, d = 200): boolean {
+  return dist(p1, p2) < d;
 }
 
 /**
@@ -73,17 +77,17 @@ export function mul(v: Vec2, k: number): Vec2 {
   return [v[0] * k, v[1] * k];
 }
 
-function clamp(x: number, a: number, b: number) {
+export function clamp(x: number, a: number, b: number): number {
   return Math.min(b, Math.max(a, x));
 }
 
-function clamp01(x: number) {
+function clamp01(x: number): number {
   return clamp(x, 0, 1);
 }
 
 /**
  * ```raw
- * Return a point that lies t from p1 toward p2
+ * Return a point that lies fraction t from p1 toward p2, default t=0.5
  * ```
  */
 export function mix(p1: Vec2, p2: Vec2, t = 0.5): Vec2 {
@@ -113,6 +117,9 @@ export function offsetByDist(p1: Vec2, p2: Vec2, d: number): Vec2 {
  * ```
  */
 export function offset(p1: Vec2, p2: Vec2, d: number): Vec2 {
+  if (Math.abs(d) < 0.000000001) {
+    return p1;
+  }
   const unitvec = normalize(vecFromPositions(p1, p2));
   const v = mul(unitvec, d);
   const p = add(p1, v);
@@ -127,14 +134,14 @@ export function offset(p1: Vec2, p2: Vec2, d: number): Vec2 {
  * returns empty list [] if no tangentpoint exist. (it means p1 is inside the circle)
  * ```
  */
-function tangentPoints(p1: Vec2, p2: Vec2, r: number): Vec2[] {
+function tangentPoints(p: Vec2, c: Vec2, r: number): Vec2[] {
   //https://math.stackexchange.com/questions/543496/how-to-find-the-equation-of-a-line-tangent-to-a-circle-that-passes-through-a-g
 
-  //r is radius of p2
-  const Cx = p2[0];
-  const Cy = p2[1];
-  const Px = p1[0];
-  const Py = p1[1];
+  //r is radius of circle with center c
+  const Cx = c[0];
+  const Cy = c[1];
+  const Px = p[0];
+  const Py = p[1];
 
   const dx = Px - Cx;
   const dy = Py - Cy;
@@ -143,8 +150,8 @@ function tangentPoints(p1: Vec2, p2: Vec2, r: number): Vec2[] {
   const dyr = dx;
 
   const d = Math.sqrt(dx * dx + dy * dy);
-  if (d >= r) {
-    return []; //no tangentpoints (p1 is inside circle p2)
+  if (d <= r) {
+    return []; //no tangentpoints (p is inside circle c)
   }
 
   const rho = r / d;
@@ -292,38 +299,39 @@ export function intersectTwoCircles(
  * 1. if not inside and would not intersect the circle: return desired_p as is
  * 2. if inside: return a point that is straight outward from the circle center
  * 3. if would become inside (direction intersects): return a point that tangents the circle
+ *    (in direction most similar with regards to direction position->desired_p)
  *
  */
 export function avoidCircle(
-  ship: Ship,
+  position: Vec2,
   desired_p: Vec2,
   c: Vec2,
   r: number
 ): Vec2 {
-  const dir_desired = unitvecFromPositions(ship.position, desired_p);
-  const tps = tangentPoints(ship.position, c, r);
+  const dir_desired = unitvecFromPositions(position, desired_p);
+  const tps = tangentPoints(position, c, r);
 
   if (tps.length === 0) {
     //inside circle
-    const dir_outward = unitvecFromPositions(c, ship.position);
-    const adjusted_p = add(ship.position, mul(dir_outward, 20));
+    const dir_outward = unitvecFromPositions(c, position);
+    const adjusted_p = add(position, mul(dir_outward, 20));
     return adjusted_p;
   } else {
     //outside circle
-    const dir_circlecenter = unitvecFromPositions(ship.position, c);
+    const dir_circlecenter = unitvecFromPositions(position, c);
     if (directionSimilarity(dir_desired, dir_circlecenter) < 0) {
       //going desired dir will NOT intersect circle
       return desired_p;
     } else {
       //going desired dir WILL intersect circle
-      const dir_tangent0 = unitvecFromPositions(ship.position, tps[0]);
-      const dir_tangent1 = unitvecFromPositions(ship.position, tps[1]);
+      const dir_tangent0 = unitvecFromPositions(position, tps[0]);
+      const dir_tangent1 = unitvecFromPositions(position, tps[1]);
       const dir_tangent = mostSimilarVec(
         dir_tangent0,
         dir_tangent1,
         dir_desired
       );
-      const adjusted_p = add(ship.position, mul(dir_tangent, 20));
+      const adjusted_p = add(position, mul(dir_tangent, 20));
       return adjusted_p;
     }
   }
@@ -341,6 +349,27 @@ export function falses(n: number): boolean[] {
  */
 export function trues(n: number): boolean[] {
   return new Array(n).fill(true);
+}
+
+/**
+ * Return true if all elements in v are true
+ */
+export function all(v: boolean[]): boolean {
+  return v.every((x) => x === true);
+}
+
+/**
+ * Return true if any element in v is true
+ */
+export function any(v: boolean[]): boolean {
+  return v.some((x) => x === true);
+}
+
+/**
+ * Return true if all elements in v are false
+ */
+export function none(v: boolean[]): boolean {
+  return !any(v);
 }
 
 /**
@@ -427,4 +456,54 @@ export function circleFrom3points(
   const radius = Math.sqrt((B * B + C * C - 4 * A * D) / (4 * A * A));
 
   return { center, radius };
+}
+
+/**
+ * ```raw
+ * Weighted mean, where weighting coefficient for each data point is
+ * the inverse sum of distances between this data point and the other data points
+ * ```
+ */
+export function distanceWeightedMean(points: Vec2[]): Vec2 {
+  //https://encyclopediaofmath.org/wiki/Distance-weighted_mean
+  if (points.length === 1) {
+    return points[0];
+  }
+  //const k = points.length;
+  const k = 1;
+
+  const w: Vec = [];
+  for (const point of points) {
+    const sumdistances = sum(points.map((p) => dist(p, point)));
+    w.push(k / sumdistances);
+  }
+  const sumw = sum(w);
+
+  const wx = sum(points.map((p, i) => w[i] * p[0]));
+  const wy = sum(points.map((p, i) => w[i] * p[1]));
+
+  const x = wx / sumw;
+  const y = wy / sumw;
+  //if all points are the same (or there is only a single point) this produces [NaN,NaN]
+  if (isNaN(x) || isNaN(y)) {
+    return points[0];
+  } else {
+    return [x, y];
+  }
+}
+
+export function weightedmean(points: Vec2s, weights: Vec): Vec2 {
+  const x = sum(points.map((p, i) => weights[i] * p[0]));
+  const y = sum(points.map((p, i) => weights[i] * p[1]));
+  const weightsum = sum(weights);
+  return [x / weightsum, y / weightsum];
+}
+
+/**
+ * Return the point in the vector ps=[p1,p2,p2] that is closest to target point targetpoint
+ */
+export function nearestPointOfPoints(ps: Vec2s, targetpoint: Vec2): Vec2 {
+  const d = ps.map((p) => dist(p, targetpoint));
+  const i = minimum(d).index;
+  return ps[i];
 }

@@ -28,7 +28,11 @@ export function ships_at_positions(
 }
 
 /**
+ * ```raw
  * Return the ship that is closest to point p.
+ *
+ * Note: Will return undefined if the passed ships array is empty.
+ * ```
  */
 export function ship_closest(ships: Ships, p: Vec2): Ship {
   const d = ships.map((ship) => dist(ship.position, p));
@@ -44,7 +48,7 @@ export function ships_closestN(ships: Ships, p: Vec2, N: number): Ships {
   const indexes = ships.map((s) => s.index);
   const sortedindexes = indexes.sort((a, b) => distances[a] - distances[b]); //index with smallest distance first
   const closestships: Ships = [];
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < Math.min(N, ships.length); i++) {
     closestships.push(ships[sortedindexes[i]]);
   }
   return closestships;
@@ -73,7 +77,7 @@ export function shipFromIndex(ships: Ships, i: number): Ship {
       return ship;
     }
   }
-  console.error(
+  console.warn(
     "shipFromIndex: No ship with index i exists in ships. returning first ship"
   );
   return ships[0];
