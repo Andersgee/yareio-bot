@@ -2,6 +2,7 @@ import collections from "./collections";
 import { myOutpostEnergy } from "./utils";
 import {
   dist,
+  intersectLineCircle,
   intersectTwoCircles,
   mix,
   nearestPointOfPoints,
@@ -23,6 +24,7 @@ function getPoints() {
     enemyfarm: enemyfarmpoints_straight(),
     enemybase: enemybasepoints(),
     star2middlefarm: star2middlefarm(),
+    enemybase_harass: enemybase_harasspoints(),
   };
 }
 
@@ -33,20 +35,40 @@ function homefarmpoints() {
   const p0f = offset(stars.me.position, pf, D);
   const p1f = offset(p0f, pf, D);
   const p2f = offset(p1f, pf, D);
+
+  const base_towardstar_f = nearestPointOfPoints(
+    intersectLineCircle(p2f, p1f, bases.me.position, D),
+    stars.me.position
+  );
+  const between_towardstar_f = offset(base_towardstar_f, stars.me.position, D);
+
   const forward = {
     star: p0f,
     between: p1f,
+    //between_towardstar: between_towardstar_f,
     base: p2f,
+    //base_towardstar: base_towardstar_f,
   };
 
   const pb = offset(bases.me.position, bases.enemy.position, -o);
   const p0b = offset(stars.me.position, pb, D);
   const p1b = offset(p0b, pb, D);
   const p2b = offset(p1b, pb, D);
+
+  const base_towardstar_b = nearestPointOfPoints(
+    intersectLineCircle(p2b, p0b, bases.me.position, D),
+    stars.me.position
+  );
+  const between_towardstar_b = offset(base_towardstar_b, stars.me.position, D);
+
   const backward = {
     star: p0b,
-    between: p1b,
-    base: p2b,
+    between: between_towardstar_b,
+    //between: p1b,
+    //between_towardstar: between_towardstar_b,
+    //base: p2b,
+    //base_towardstar: base_towardstar_b,
+    base: base_towardstar_b,
   };
 
   return { forward, backward };
@@ -93,12 +115,46 @@ function star2middlefarm(): {
 
 function enemybasepoints() {
   const { bases } = collections;
-  const a = offset(bases.enemy.position, bases.me.position, 199);
-  const b = offset(bases.enemy.position, bases.me.position, 399);
+  const a = offset(bases.enemy.position, bases.me.position, 199.999);
+  const b = offset(bases.enemy.position, bases.me.position, 399.999);
 
   return {
     inrange: a,
     insight: b,
+  };
+}
+
+function enemybase_harasspoints() {
+  const { bases, stars } = collections;
+
+  const ps = intersectTwoCircles(
+    stars.enemy.position,
+    D * 3,
+    bases.enemy.position,
+    D * 2
+  );
+  const d1 = dist(ps[0], stars.middle.position);
+  const d2 = dist(ps[1], stars.middle.position);
+  const a = d1 < d2 ? ps[0] : ps[1]; //the point nearer middle
+  const b = d1 < d2 ? ps[1] : ps[0];
+
+  const annoyingpoint1 = offset(bases.enemy.position, a, -399.99); //away from mid and away from farm line
+  const annoyingpoint2 = offset(bases.enemy.position, b, -399.99); //toward mid and away from farm line
+  const annoyingpoint3 = offset(
+    bases.enemy.position,
+    stars.enemy.position,
+    -399.999
+  );
+
+  const annoyingpoint4 = offset(
+    bases.enemy.position,
+    bases.me.position,
+    399.999
+  );
+  return {
+    front: annoyingpoint4,
+    between: annoyingpoint3,
+    behind: annoyingpoint1,
   };
 }
 

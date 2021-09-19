@@ -1,4 +1,4 @@
-import { dist, minimum } from "./vec";
+import { dist, indexVec, minimum } from "./vec";
 
 /**
  * ```raw
@@ -44,14 +44,37 @@ export function ship_closest(ships: Ships, p: Vec2): Ship {
  * Return the N ships that is closest to point p.
  */
 export function ships_closestN(ships: Ships, p: Vec2, N: number): Ships {
-  const distances = ships.map((ship) => dist(ship.position, p));
-  const indexes = ships.map((s) => s.index);
-  const sortedindexes = indexes.sort((a, b) => distances[a] - distances[b]); //index with smallest distance first
-  const closestships: Ships = [];
-  for (let i = 0; i < Math.min(N, ships.length); i++) {
-    closestships.push(ships[sortedindexes[i]]);
-  }
-  return closestships;
+  const sortedships = ships
+    .slice()
+    .sort((a, b) => dist(a.position, p) - dist(b.position, p));
+  return sortedships.slice(0, N);
+}
+
+/**
+ * Smallest distance first
+ */
+export function sortByNearestenemyDistance(ships: Ships): Ships {
+  return ships
+    .slice()
+    .sort(
+      (a, b) =>
+        dist(a.position, a.nearestenemy.position) -
+        dist(b.position, b.nearestenemy.position)
+    );
+}
+
+/**
+ * Lowest energy first
+ */
+export function sortByShipenergy(ships: Ships): Ships {
+  return ships.slice().sort((a, b) => a.energy - b.energy);
+}
+
+/**
+ * Biggest energy first
+ */
+export function sortByShipenergyReverse(ships: Ships): Ships {
+  return ships.slice().sort((a, b) => b.energy - a.energy);
 }
 
 /**

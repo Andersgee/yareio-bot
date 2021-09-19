@@ -1,20 +1,30 @@
 import collections from "./collections";
-import { ships_not_in } from "./find";
-import { attackdmg, notEmpty } from "./utils";
-import { isWithinDist } from "./vec";
+import { ships_not_in, sortByShipenergy } from "./find";
+import {
+  attackdmg,
+  transferamount,
+  notEmpty,
+  lossFromAttacking,
+} from "./utils";
+import { isWithinDist, sum } from "./vec";
 
 export default function energize_enemy(targets: targets, attacking: Vec): void {
-  energize_enemyship(targets, attacking);
+  const assumeNheals = memory.enemyIsSquareRush ? 0 : 1;
+  energize_enemyship(targets, attacking, assumeNheals);
   energize_enemybase(targets, attacking);
 }
 
 /**
  * Attack enemies in range, in a way that does not overkill an enemy.
  */
-function energize_enemyship(targets: targets, attacking: Vec) {
+function energize_enemyship(
+  targets: targets,
+  attacking: Vec,
+  assumeNheals = 1
+) {
   const { enemyships } = collections;
 
-  for (const enemyship of enemyships) {
+  for (const enemyship of sortByShipenergy(enemyships)) {
     //get all my ships that are in range of this enemyship
     const myshipsInRange = enemyship.nearbyenemies;
 
@@ -22,7 +32,9 @@ function energize_enemyship(targets: targets, attacking: Vec) {
     const myAvailableships = ships_not_in(myshipsInRange, attacking);
 
     //const enemyshipEnergy = enemyship.energy - lossFromAttacking(enemyship); //assume the enemy is also attacking
-    const enemyshipEnergy = enemyship.energy; //enemyship might get healed, so just go with the basic
+    //const enemyshipEnergy = enemyship.energy; //enemyship might get healed, so just go with the basic
+    const en = enemyship.energy - lossFromAttacking(enemyship);
+    const enemyshipEnergy = en + assumeNheals * enemyship.size;
 
     let dmgdealt = 0;
     for (const myship of myAvailableships) {
@@ -39,12 +51,31 @@ function energize_enemyship(targets: targets, attacking: Vec) {
   }
 }
 
+/**
+ * ```raw
+ * Energize enemy base, in a way that does not overkill the base.
+ *
+ * Base only need to go below 0 energy for a total of 8 ticks over the course of the game.
+ * ```
+ */
 function energize_enemybase(targets: targets, attacking: Vec) {
-  const { myships, bases } = collections;
-  for (const ship of ships_not_in(myships, attacking)) {
-    const isNearEnemybase = isWithinDist(ship.position, bases.enemy.position);
-    if (isNearEnemybase) {
+  const { myships, enemyships, bases } = collections;
+  const nearbyEnemyships = enemyships.filter((s) =>
+    isWithinDist(s.position, bases.enemy.position)
+  );
+  const potentialBaseHeal = sum(nearbyEnemyships.map(transferamount));
+  //const potentialBaseHeal = 0; //assume enemy wont energize base
+
+  const baseattackerShips = ships_not_in(myships, attacking).filter((s) =>
+    isWithinDist(s.position, bases.enemy.position)
+  );
+
+  let dmgdealt = 0;
+  for (const ship of baseattackerShips) {
+    if (dmgdealt <= bases.enemy.energy + potentialBaseHeal) {
       targets[ship.index] = bases.enemy;
+      dmgdealt += attackdmg(ship);
+
       attacking.push(ship.index);
     }
   }

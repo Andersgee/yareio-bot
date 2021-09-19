@@ -64,15 +64,33 @@ function getShips() {
   for (const [index, ship] of myships.entries()) {
     ship.index = index;
 
+    ship.nearbyfriends_includingself = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 200)
+    );
     ship.nearbyfriends = myships.filter(
       (s) => s.index !== index && isWithinDist(ship.position, s.position, 200)
     );
-    ship.nearbyfriends_includingself = myships.filter((s) =>
-      isWithinDist(ship.position, s.position, 200)
+    ship.nearbyfriends20 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 20)
+    );
+    ship.nearbyfriends40 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 40)
+    );
+    ship.nearbyfriends60 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 60)
     );
 
     ship.nearbyenemies = enemyships.filter((s) =>
       isWithinDist(ship.position, s.position, 200)
+    );
+    ship.nearbyenemies220 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 220)
+    );
+    ship.nearbyenemies240 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 240)
+    );
+    ship.nearbyenemies260 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 260)
     );
     ship.nearbyenemies400 = enemyships.filter((s) =>
       isWithinDist(ship.position, s.position, 400)
@@ -94,15 +112,34 @@ function getShips() {
   for (const [index, ship] of enemyships.entries()) {
     ship.index = index;
 
+    ship.nearbyfriends_includingself = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 200)
+    );
     ship.nearbyfriends = enemyships.filter(
       (s) => s.index !== index && isWithinDist(ship.position, s.position, 200)
     );
-    ship.nearbyfriends_includingself = enemyships.filter((s) =>
-      isWithinDist(ship.position, s.position, 200)
+
+    ship.nearbyfriends20 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 20)
+    );
+    ship.nearbyfriends40 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 40)
+    );
+    ship.nearbyfriends60 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 60)
     );
 
     ship.nearbyenemies = myships.filter((s) =>
       isWithinDist(ship.position, s.position, 200)
+    );
+    ship.nearbyenemies220 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 220)
+    );
+    ship.nearbyenemies240 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 240)
+    );
+    ship.nearbyenemies260 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 260)
     );
     ship.nearbyenemies400 = myships.filter((s) =>
       isWithinDist(ship.position, s.position, 400)

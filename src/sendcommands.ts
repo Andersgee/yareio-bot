@@ -1,6 +1,10 @@
 import collections from "./collections";
 
-export default function sendcommands(ps: Vec2[], ts: targets): void {
+export default function sendcommands(
+  ps: Vec2[],
+  ts: targets,
+  explodeindexes: Vec = []
+): void {
   const { myships } = collections;
   for (const [i, ship] of myships.entries()) {
     if (ps[i]) {
@@ -11,6 +15,9 @@ export default function sendcommands(ps: Vec2[], ts: targets): void {
     }
     if (ts[i]) {
       ship.energize(ts[i]);
+    }
+    if (explodeindexes.includes(i)) {
+      ship.explode();
     }
   }
 }

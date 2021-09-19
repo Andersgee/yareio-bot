@@ -26,8 +26,8 @@ export default function energize(
   energize_enemy(targets, attacking);
   energize_self(targets, busy, attacking, nfarmers, nmidfarmers);
   energize_outpost(targets, busy, attacking);
-  const shouldHeal = energize_friend(targets, busy, attacking);
-  energize_base(targets, busy, attacking, shouldHeal);
+  energize_friend(targets, busy, attacking, nfarmers);
+  energize_base(targets, busy, attacking, nfarmers);
 
   return targets;
 }

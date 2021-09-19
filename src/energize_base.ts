@@ -1,24 +1,60 @@
 import collections from "./collections";
 import { ships_not_in } from "./find";
 import { constructGraph, path_byclosestavailabledestination } from "./graph";
-import { canTransfer, isFull } from "./utils";
+import {
+  anyShipIsWithinDist,
+  canTransfer,
+  isFull,
+  maxStarFarmers,
+} from "./utils";
 import { all, isWithinDist } from "./vec";
 
 export default function energize_base(
   targets: targets,
   busy: Vec,
   attacking: Vec,
-  shouldHeal: boolean
+  nfarmers: number
 ): void {
-  const { stars } = collections;
+  const { stars, myships, enemyships, bases } = collections;
+
+  const enemyIsNearBase = anyShipIsWithinDist(
+    enemyships,
+    bases.me.position,
+    600
+  );
+  const Nhome_max = maxStarFarmers(stars.me, myships[0].size);
+
+  const shouldHealBeforeTransferring =
+    memory.gamestage > 0 || enemyIsNearBase || nfarmers >= Nhome_max;
+
   let transfercondition = (s: Ship) => canTransfer(s);
-  if (shouldHeal) {
+  if (shouldHealBeforeTransferring) {
     transfercondition = (s: Ship) => isFull(s);
   }
-  energize_nearstar2base(targets, stars.me, busy, transfercondition);
-  energize_nearstar2base(targets, stars.middle, busy, transfercondition);
 
-  if (!shouldHeal) {
+  const shouldEnergizeBase =
+    !memory.enemyIsSquareRush ||
+    (memory.enemyIsSquareRush && myships.length < 8) ||
+    (memory.enemyIsSquareRush && myships.length < 9 && bases.me.energy <= 87);
+
+  if (shouldEnergizeBase) {
+    energize_nearstar2base(
+      targets,
+      stars.me,
+      busy,
+      attacking,
+      transfercondition
+    );
+    energize_nearstar2base(
+      targets,
+      stars.middle,
+      busy,
+      attacking,
+      transfercondition
+    );
+  }
+
+  if (!shouldHealBeforeTransferring && shouldEnergizeBase) {
     energize_any2base(targets, busy);
   }
 }
@@ -27,20 +63,21 @@ function energize_nearstar2base(
   targets: targets,
   star: Star,
   busy: Vec,
+  attacking: Vec,
   condition = (s: Ship) => isFull(s)
 ): void {
   const { myships, bases } = collections;
   const base = bases.me;
 
-  const sources = ships_not_in(myships, busy).filter(
+  const sources = ships_not_in(myships, busy.concat(attacking)).filter(
     (s) => isWithinDist(star.position, s.position, 200) && condition(s)
   );
-  const shipsnearbase = ships_not_in(myships, busy).filter((s) =>
-    isWithinDist(base.position, s.position, 200)
+  const shipsnearbase = ships_not_in(myships, busy.concat(attacking)).filter(
+    (s) => isWithinDist(base.position, s.position, 200)
   );
 
   for (const src of sources) {
-    const ships = ships_not_in(myships, busy);
+    const ships = ships_not_in(myships, busy.concat(attacking));
 
     if (ships.length > 0) {
       const G = constructGraph(ships);

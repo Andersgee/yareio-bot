@@ -3,7 +3,7 @@
 declare type Vec2 = [x: number, y: number];
 
 //Game's global variables
-declare const memory: { gamestage: number }; //Empty object. Use it to store values across ticks
+declare const memory: { gamestage: number; enemyIsSquareRush: boolean }; //Empty object. Use it to store values across ticks
 declare const base: Base; //object, Your base
 declare const enemy_base: Base; //object, Enemy base
 declare const star_zxq: Star; //object, Top-left corner star
@@ -192,9 +192,8 @@ declare interface Base {
 
   /**
    * ```raw
-   * starts at 5.
-   * Decreases by 1 if not enough energy to "tank" attacks.
-   * Game ends when base has 0 hp.
+   * starts at 8.
+   * Decrease by one every tick the base is attacked into negative energy.
    * ```
    */
   hp: number;
@@ -219,6 +218,11 @@ declare interface Base {
    * not mentioned in docs. but "circles", "squares" or "triangles"
    */
   shape: string;
+
+  /**
+   * not mentioned in docs.
+   */
+  current_spirit_cost: number;
 }
 
 //Outpost

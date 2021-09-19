@@ -43,7 +43,7 @@ export function dist(p1: Vec2, p2: Vec2): number {
  * ```
  */
 export function isWithinDist(p1: Vec2, p2: Vec2, d = 200): boolean {
-  return dist(p1, p2) < d;
+  return dist(p1, p2) <= d;
 }
 
 /**
@@ -69,7 +69,7 @@ function directionSimilarity(v1: Vec2, v2: Vec2): number {
   return dot(normalize(v1), normalize(v2));
 }
 
-export function add(v1: Vec2 | Vec2, v2: Vec2): Vec2 {
+export function add(v1: Vec2, v2: Vec2): Vec2 {
   return [v1[0] + v2[0], v1[1] + v2[1]];
 }
 
@@ -150,7 +150,7 @@ function tangentPoints(p: Vec2, c: Vec2, r: number): Vec2[] {
   const dyr = dx;
 
   const d = Math.sqrt(dx * dx + dy * dy);
-  if (d <= r) {
+  if (d < r) {
     return []; //no tangentpoints (p is inside circle c)
   }
 
@@ -294,13 +294,30 @@ export function intersectTwoCircles(
 }
 
 /**
+ * perpendicular Clockwise
+ */
+function perpendicularCW(v: Vec2): Vec2 {
+  return [v[1], -v[0]];
+}
+
+/**
+ * perpendicular Counter Clockwise
+ */
+function perpendicularCCW(v: Vec2): Vec2 {
+  return [-v[1], v[0]];
+}
+
+/**
+ * ```raw
  * Return a point adjusted_p the ship can move to that avoids the circle c with radius r
  *
- * 1. if not inside and would not intersect the circle: return desired_p as is
- * 2. if inside: return a point that is straight outward from the circle center
- * 3. if would become inside (direction intersects): return a point that tangents the circle
- *    (in direction most similar with regards to direction position->desired_p)
- *
+ * 1. if moving will not put ship inside: just move
+ * 2. if inside:
+ *  2.1 if near edge: go diagonal (land on circumference) in the direction most similar to desired_p
+ *  2.2 if further in: go straight outward from circle center
+ * 3. if outside
+ *  3.1 (if step1 wasnt triggered) go along tangent direction most similar to desired_p
+ *```
  */
 export function avoidCircle(
   position: Vec2,
@@ -308,32 +325,48 @@ export function avoidCircle(
   c: Vec2,
   r: number
 ): Vec2 {
-  const dir_desired = unitvecFromPositions(position, desired_p);
-  const tps = tangentPoints(position, c, r);
+  const p_moved = offset(
+    position,
+    desired_p,
+    Math.min(20, dist(position, desired_p))
+  );
+  if (dist(c, p_moved) > r) {
+    //moving wont put ship inside.. just move.
+    return p_moved;
+  }
 
+  const dir_desired = unitvecFromPositions(position, desired_p);
+  //const dir_center = unitvecFromPositions(position, c);
+  const tps = tangentPoints(position, c, r);
   if (tps.length === 0) {
-    //inside circle
-    const dir_outward = unitvecFromPositions(c, position);
-    const adjusted_p = add(position, mul(dir_outward, 20));
-    return adjusted_p;
-  } else {
-    //outside circle
-    const dir_circlecenter = unitvecFromPositions(position, c);
-    if (directionSimilarity(dir_desired, dir_circlecenter) < 0) {
-      //going desired dir will NOT intersect circle
-      return desired_p;
+    //inside.
+    if (dist(c, position) > r - 20) {
+      //Ship is pretty close to circumference, there exists 2 "diagonal" moves to get outside
+      //choose the one most similar to dir_desired
+      const ps = intersectTwoCircles(c, r, position, 20);
+      const dir_diag0 = unitvecFromPositions(position, ps[0]);
+      const dir_diag1 = unitvecFromPositions(position, ps[1]);
+      const dir_diag = mostSimilarVec(dir_diag0, dir_diag1, dir_desired);
+
+      const p_diag = add(position, mul(dir_diag, 20));
+      return p_diag;
     } else {
-      //going desired dir WILL intersect circle
-      const dir_tangent0 = unitvecFromPositions(position, tps[0]);
-      const dir_tangent1 = unitvecFromPositions(position, tps[1]);
-      const dir_tangent = mostSimilarVec(
-        dir_tangent0,
-        dir_tangent1,
-        dir_desired
-      );
-      const adjusted_p = add(position, mul(dir_tangent, 20));
-      return adjusted_p;
+      //otherwise straight out
+      return offset(c, position, r);
     }
+  } else {
+    //outside, there exists 2 tangent points
+    //choose the one most similar to dir_desired
+    const dir_tangent0 = unitvecFromPositions(position, tps[0]);
+    const dir_tangent1 = unitvecFromPositions(position, tps[1]);
+    const s0 = directionSimilarity(dir_tangent0, dir_desired);
+    const s1 = directionSimilarity(dir_tangent1, dir_desired);
+    const p_tangent = s0 > s1 ? tps[0] : tps[1];
+
+    //const p_tangent_moved = offset(position, p_tangent, Math.min(20, dist(position, p_tangent)));
+
+    const p_tangent_moved = offset(position, p_tangent, 20);
+    return p_tangent_moved;
   }
 }
 
@@ -418,13 +451,13 @@ export function pushfirst(v: Vec, x: number): Vec {
 /**
  * Construct a circle from 3 points on its circumference.
  *
- * Return [center, radius]
+ * Return [centerpoint, radius]
  */
 export function circleFrom3points(
   p1: Vec2,
   p2: Vec2,
   p3: Vec2
-): { center: Vec2; radius: number } {
+): [Vec2, number] {
   //https://math.stackexchange.com/questions/213658/get-the-equation-of-a-circle-when-given-3-points
   const x1 = p1[0];
   const y1 = p1[1];
@@ -455,7 +488,7 @@ export function circleFrom3points(
 
   const radius = Math.sqrt((B * B + C * C - 4 * A * D) / (4 * A * A));
 
-  return { center, radius };
+  return [center, radius];
 }
 
 /**
@@ -506,4 +539,77 @@ export function nearestPointOfPoints(ps: Vec2s, targetpoint: Vec2): Vec2 {
   const d = ps.map((p) => dist(p, targetpoint));
   const i = minimum(d).index;
   return ps[i];
+}
+
+/**
+ * A*x^2 + B*x + C = 0
+ * return [x1,x2]
+ */
+function quadraticroots(A: number, B: number, C: number) {
+  const r = Math.sqrt(B * B - 4 * A * C);
+  const x1 = (-B + r) / (2 * A);
+  const x2 = (-B - r) / (2 * A);
+  return [x1, x2];
+}
+
+/**
+ * ```raw
+ * return two points [a, b] where (infinite) line created by p1->p2 intersects circle with center center and radius r.
+ *
+ * note: return empty list [] if no intersection exist.
+ * ```
+ */
+export function intersectLineCircle(
+  p1: Vec2,
+  p2: Vec2,
+  center: Vec2,
+  r: number
+): Vec2[] {
+  //https://math.stackexchange.com/questions/228841/how-do-i-calculate-the-intersections-of-a-straight-line-and-a-circle
+  const x1 = p1[0];
+  const y1 = p1[1];
+  const x2 = p2[0];
+  const y2 = p2[1];
+
+  const p = center[0];
+  const q = center[1];
+
+  if (x1 === x2) {
+    //vertical line
+    const k = x1;
+    const A = 1;
+    const B = -2 * q;
+    const C = p * p + q * q - r * r - 2 * k * p + k * k;
+    if (B * B - 4 * A * C < 0) {
+      //no intersection
+      return [];
+    }
+    const [y_1, y_2] = quadraticroots(A, B, C);
+    return [
+      [k, y_1],
+      [k, y_2],
+    ];
+  }
+
+  const m = (y2 - y1) / (x2 - x1);
+  const c = y1 - m * x1;
+
+  const A = m * m + 1;
+  const B = 2 * (m * c - m * q - p);
+  const C = q * q - r * r + p * p - 2 * c * q + c * c;
+
+  if (B * B - 4 * A * C < 0) {
+    //no intersection
+    return [];
+  }
+
+  const [x_1, x_2] = quadraticroots(A, B, C);
+
+  //y = m*x + c
+  const y_1 = m * x_1 + c;
+  const y_2 = m * x_2 + c;
+  return [
+    [x_1, y_1],
+    [x_2, y_2],
+  ];
 }

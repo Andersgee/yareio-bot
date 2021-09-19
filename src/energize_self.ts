@@ -1,28 +1,49 @@
 import collections from "./collections";
-import { ships_not_in } from "./find";
-import { myOutpostEnergy, notFull, sustainableStarEnergy } from "./utils";
+import { ships_not_in, sortByNearestenemyDistance } from "./find";
+import {
+  canTransfer,
+  maxStarFarmers,
+  myOutpostEnergy,
+  notFull,
+  sustainableStarEnergy,
+  sustainableStarFarmers,
+  transferamount,
+} from "./utils";
 import { isWithinDist } from "./vec";
 
 /**
  * energize_self but with guard aginst overfarming 8charge star as function of its energy and nfarmers)
  */
-export default function energize_farm(
+export default function energize_starOrSelf(
   targets: targets,
   busy: Vec,
   attacking: Vec,
   nfarmers: number,
   nmidfarmers: number
 ): void {
-  const { stars } = collections;
+  const { stars, myships } = collections;
+
+  const Nhome = sustainableStarFarmers(stars.me, myships[0].size);
+  const Nhome_max = maxStarFarmers(stars.me, myships[0].size);
+
+  const Nmid = sustainableStarFarmers(stars.me, myships[0].size);
+  const Nmid_max = maxStarFarmers(stars.me, myships[0].size);
 
   //guard against overfarming
-  energize_star(targets, stars.me, busy, nfarmers);
-  if (myOutpostEnergy() > 600) {
-    energize_star(targets, stars.middle, busy, nmidfarmers);
+  energize_star(targets, stars.me, busy, nfarmers, attacking);
+
+  if (myOutpostEnergy() > 600 && nmidfarmers >= Nmid_max) {
+    energize_star(targets, stars.middle, busy, nmidfarmers, attacking);
   }
 
-  energize_self(targets, stars.me, busy, attacking);
-  energize_self(targets, stars.middle, busy, attacking);
+  const stayfullhome = memory.enemyIsSquareRush;
+  energize_self(targets, stars.me, busy, attacking, stayfullhome);
+
+  const stayfullmid =
+    memory.enemyIsSquareRush ||
+    (memory.gamestage === 0 && myOutpostEnergy() > 30) ||
+    (memory.gamestage === 1 && myOutpostEnergy() > 200 && nfarmers < Nmid); //meant for the early controlmid() ships
+  energize_self(targets, stars.middle, busy, attacking, stayfullmid);
 }
 
 /**
@@ -32,44 +53,91 @@ function energize_self(
   targets: targets,
   star: Star,
   busy: Vec,
-  attacking: Vec
-) {
-  const { myships } = collections;
+  attacking: Vec,
+  stayfull = false
+): void {
+  const { myships, bases } = collections;
 
   const ships = ships_not_in(myships, busy.concat(attacking)).filter((s) =>
     isWithinDist(star.position, s.position)
   );
 
+  const N_max =
+    myOutpostEnergy() > 600 ? maxStarFarmers(star, myships[0].size) : 9999;
+  const maxselfers = memory.enemyIsSquareRush ? 999 : N_max / 2;
+  let nselfers = 0;
+
+  const shoulEven = (s: Ship) => notFull(s) && nselfers < maxselfers;
+  const shouldOdd = (s: Ship) =>
+    notFull(s) &&
+    (stayfull || (s.nearbyenemies400.length > 0 && nselfers < maxselfers));
+
+  const haveEssentially9ships = essentially9();
   for (const [i, ship] of ships.entries()) {
     if ((tick + i) % 2 == 0) {
-      if (notFull(ship)) {
+      if (shoulEven(ship)) {
         targets[ship.index] = ship;
-        if (star.energy > 2) {
+        nselfers += 1;
+        if (star.energy > 2 || stayfull) {
           //only make it busy if worthwile not to override
           busy.push(ship.index);
+        }
+      }
+    } else {
+      //actually still energize self if enemy nearbyish
+      if (shouldOdd(ship)) {
+        targets[ship.index] = ship;
+        nselfers += 1;
+        if (star.energy > 2 || stayfull) {
+          //only make the odd busy if on square rush specific scenario
+          if (memory.enemyIsSquareRush && haveEssentially9ships) {
+            busy.push(ship.index);
+          }
         }
       }
     }
   }
 }
 
+function essentially9(): boolean {
+  const { myships, bases } = collections;
+  return (
+    myships.length === 9 || (myships.length === 8 && bases.me.energy >= 87)
+  );
+}
+
 function energize_star(
   targets: targets,
   star: Star,
   busy: Vec,
-  nfarmers: number
-) {
+  nfarmers: number,
+  attacking: Vec
+): void {
   const { myships } = collections;
+  if (memory.enemyIsSquareRush) {
+    return;
+  }
 
-  if (star.energy < sustainableStarEnergy(star, nfarmers, myships[0].size)) {
-    const ships = myships.filter((s) =>
-      isWithinDist(star.position, s.position)
+  const sustainableEnergy = sustainableStarEnergy(
+    star,
+    nfarmers,
+    myships[0].size
+  );
+  let currentEnergy = star.energy;
+  if (currentEnergy < sustainableEnergy) {
+    const ships = myships.filter(
+      (s) =>
+        isWithinDist(star.position, s.position) &&
+        s.nearbyenemies400.length === 0
     );
 
     for (const [i, ship] of ships.entries()) {
-      if ((tick + i + 1) % 2 == 0) {
+      if (currentEnergy < sustainableEnergy) {
         targets[ship.index] = star;
         busy.push(ship.index);
+        attacking.push(ship.index);
+        currentEnergy += transferamount(ship);
+        ship.shout("c");
       }
     }
   }

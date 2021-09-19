@@ -11,10 +11,11 @@ export default function energize_outpost(
   const { myships, outposts, info } = collections;
   const outpost = outposts.middle;
 
-  const shouldEnergizeOutpost = myOutpostEnergy() <= 600;
+  const shouldEnergizeOutpost =
+    outposts.middle.energy === 0 || (tick > 61 && myOutpostEnergy() <= 600);
 
   if (shouldEnergizeOutpost) {
-    const ships = ships_not_in(myships, attacking.concat(busy)).filter(
+    const ships = ships_not_in(myships, busy.concat(attacking)).filter(
       (s) => isWithinDist(s.position, outpost.position) && notEmpty(s)
     );
     for (const ship of ships) {

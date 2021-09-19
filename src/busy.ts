@@ -3,7 +3,7 @@ import { ships_not_in, ship_closest } from "./find";
 
 /**
  * ```raw
- * Modify targetsps. Add ship.index of closest ship to busy.
+ * Move closest not busy ship to p and make it busy.
  *
  * return 0 if no ship found. (1 otherwise)
  * ```

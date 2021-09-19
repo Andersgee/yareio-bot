@@ -1,26 +1,221 @@
 import collections from "./collections";
-import { ships_not_in } from "./find";
-import { attackdmg, lossFromAttacking } from "./utils";
+import { evalCombat2 } from "./combateval2";
+import { enemyShipCost, myShipCost } from "./utils";
 import {
+  any,
+  avoidCircle,
   dist,
-  distanceWeightedMean,
   isWithinDist,
-  mix,
   offset,
   weightedmean,
 } from "./vec";
 
 export default function move_combat(targetps: Vec2s): void {
+  const alreadyHasOrders: Vec = [];
   clamp_movement(targetps);
-  gather_before_combat(targetps);
-  position_in_combat(targetps);
+
+  R200(targetps, alreadyHasOrders);
+  R220(targetps, alreadyHasOrders);
+  R240(targetps, alreadyHasOrders);
+}
+
+const MINADVANTAGE = memory.enemyIsSquareRush ? -59 : -1;
+
+function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
+  const { myships, enemyships } = collections;
+  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
+
+  const enemyshipcost = enemyShipCost();
+  const myshipcost = myShipCost();
+  const R = 200;
+
+  for (const ship of myships) {
+    const nearbyEnemies = ship.nearbyenemies;
+    //const nearbyFriends = myships.filter((s) =>isWithinDist(s.position, ship.position, 0.5));
+    const nearbyFriends = ship.nearbyfriends20;
+
+    if (nearbyEnemies.length === 0 || alreadyHasOrders.includes(ship.index)) {
+      continue;
+    }
+    const myAdvantage = evalCombat2(nearbyFriends, nearbyEnemies).myAdvantage;
+
+    const friendTargetPositions = nearbyFriends.map((s) => targetps[s.index]);
+    const enemyValuePoint = valueWeightedMean(nearbyEnemies, enemyshipcost);
+    const friendValuePoint = valueWeightedMean(
+      nearbyFriends,
+      myshipcost,
+      friendTargetPositions
+    );
+
+    const continueAsPlannedisDangerous = any(
+      enemyships.map((s) => isWithinDist(s.position, targetps[ship.index], 220))
+    );
+
+    if (continueAsPlannedisDangerous) {
+      if (myAdvantage >= MINADVANTAGE) {
+        //bring friends along in attack order
+        const r = myAdvantage > 0 ? 180 : 190;
+        for (const friend of nearbyFriends) {
+          targetps_new[friend.index] = offset(
+            enemyValuePoint,
+            friendValuePoint,
+            r
+          );
+          alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
+        }
+        ship.shout(`a0 ${myAdvantage}`);
+      } else {
+        //back (solo)
+        targetps_new[ship.index] = offset(
+          enemyValuePoint,
+          friendValuePoint,
+          220
+        );
+        ship.shout(`b0 ${myAdvantage}`);
+        alreadyHasOrders.push(ship.index);
+      }
+    }
+  }
+
+  for (let i = 0; i < targetps.length; i++) {
+    if (targetps_new[i]) {
+      targetps[i] = targetps_new[i];
+    }
+  }
+  clamp_movement(targetps);
+}
+
+function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
+  const { myships, enemyships } = collections;
+  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
+
+  const enemyshipcost = enemyShipCost();
+  const myshipcost = myShipCost();
+  const R = 220;
+
+  for (const ship of myships) {
+    const nearbyEnemies = ship.nearbyenemies220;
+    const nearbyFriends = ship.nearbyfriends40;
+
+    if (nearbyEnemies.length === 0 || alreadyHasOrders.includes(ship.index)) {
+      continue;
+    }
+    const myAdvantage = evalCombat2(nearbyFriends, nearbyEnemies).myAdvantage;
+
+    const friendTargetPositions = nearbyFriends.map((s) => targetps[s.index]);
+    const enemyValuePoint = valueWeightedMean(nearbyEnemies, enemyshipcost);
+    const friendValuePoint = valueWeightedMean(
+      nearbyFriends,
+      myshipcost,
+      friendTargetPositions
+    );
+
+    const continueAsPlannedisDangerous = any(
+      enemyships.map((s) => isWithinDist(s.position, targetps[ship.index], 220))
+    );
+
+    if (continueAsPlannedisDangerous) {
+      if (myAdvantage >= MINADVANTAGE) {
+        const r = myAdvantage > 0 ? 180 : 190;
+        //bring friends along in attack order
+        for (const friend of nearbyFriends) {
+          targetps_new[friend.index] = offset(
+            enemyValuePoint,
+            friendValuePoint,
+            r
+          );
+          alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
+        }
+        ship.shout(`a2 ${myAdvantage}`);
+      } else {
+        //back (solo)
+        targetps_new[ship.index] = offset(
+          enemyValuePoint,
+          friendValuePoint,
+          240
+        );
+        ship.shout(`b2 ${myAdvantage}`);
+        alreadyHasOrders.push(ship.index);
+      }
+    }
+  }
+
+  for (let i = 0; i < targetps.length; i++) {
+    if (targetps_new[i]) {
+      targetps[i] = targetps_new[i];
+    }
+  }
+  clamp_movement(targetps);
+}
+
+function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
+  const { myships, enemyships } = collections;
+  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
+
+  const enemyshipcost = enemyShipCost();
+  const myshipcost = myShipCost();
+  const R = 240;
+
+  for (const ship of myships) {
+    const nearbyEnemies = ship.nearbyenemies240;
+    const nearbyFriends = ship.nearbyfriends60;
+
+    if (nearbyEnemies.length === 0 || alreadyHasOrders.includes(ship.index)) {
+      continue;
+    }
+    const myAdvantage = evalCombat2(nearbyFriends, nearbyEnemies).myAdvantage;
+
+    const friendTargetPositions = nearbyFriends.map((s) => targetps[s.index]);
+    const enemyValuePoint = valueWeightedMean(nearbyEnemies, enemyshipcost);
+    const friendValuePoint = valueWeightedMean(
+      nearbyFriends,
+      myshipcost,
+      friendTargetPositions
+    );
+
+    const continueAsPlannedisDangerous = any(
+      enemyships.map((s) => isWithinDist(s.position, targetps[ship.index], 220))
+    );
+
+    if (continueAsPlannedisDangerous) {
+      if (myAdvantage >= MINADVANTAGE) {
+        const r = myAdvantage > 0 ? 180 : 190;
+        //bring friends along in attack order
+        for (const friend of nearbyFriends) {
+          targetps_new[friend.index] = offset(
+            enemyValuePoint,
+            friendValuePoint,
+            r
+          );
+          alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
+        }
+        ship.shout(`a4 ${myAdvantage}`);
+      } else {
+        //back (solo)
+        targetps_new[ship.index] = offset(
+          enemyValuePoint,
+          friendValuePoint,
+          260
+        );
+        ship.shout(`b4 ${myAdvantage}`);
+        alreadyHasOrders.push(ship.index);
+      }
+    }
+  }
+
+  for (let i = 0; i < targetps.length; i++) {
+    if (targetps_new[i]) {
+      targetps[i] = targetps_new[i];
+    }
+  }
+  clamp_movement(targetps);
 }
 
 /**
  * A Ship can only move 20 units. make targetps reflect that.
  */
 function clamp_movement(targetps: Vec2s) {
-  const { myships } = collections;
+  const { myships, stars, outposts } = collections;
   for (const [i, ship] of myships.entries()) {
     if (targetps[i]) {
       //its possible ship was never assigned at targetp ut unlikely
@@ -30,136 +225,52 @@ function clamp_movement(targetps: Vec2s) {
       targetps[i] = ship.position;
     }
   }
-}
 
-function position_in_combat(targetps: Vec2s) {
-  const { myships } = collections;
-
-  const alreadyHasOrders: Vec = [];
-  for (const ship of myships) {
-    const nearbyEnemies = ship.nearbyenemies;
-    if (nearbyEnemies.length < 1 || alreadyHasOrders.includes(ship.index)) {
-      continue;
-    }
-
-    const veryNearbyFriends = myships.filter((s) =>
-      isWithinDist(s.position, ship.position, 1)
-    ); //including self ofc
-
-    const myPower = evaluateCombat(veryNearbyFriends, nearbyEnemies, 200);
-    const enemyPower = evaluateCombat(nearbyEnemies, veryNearbyFriends, 200);
-    if (myPower > enemyPower) {
-      const weights = nearbyEnemies.map(
-        (s) => s.energy_capacity - s.energy + 1
-      ); //low energy enemies have highe weights (also add 1 to avoid zero weights)
-      const nearbyEnemiesPositions = nearbyEnemies.map((s) => s.position);
-      const desired_diection_point = weightedmean(
-        nearbyEnemiesPositions,
-        weights
-      );
-      //const distance_nearest_enemy = dist(ship.position,ship.nearestenemy.position);
-
-      for (const friend of veryNearbyFriends) {
-        targetps[friend.index] = offset(
-          desired_diection_point,
-          ship.position,
-          181
-        );
-        alreadyHasOrders.push(friend.index);
-      }
-    }
-  }
-}
-
-function gather_before_combat(targetps: Vec2s) {
-  const { myships, enemyships } = collections;
-
-  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
-  const newmovestrat: string[] = new Array(targetps.length).fill(null);
-  for (const ship of myships) {
-    const nearbyEnemies = enemyships.filter((s) =>
-      isWithinDist(s.position, ship.position, 241)
-    );
-    if (nearbyEnemies.length < 1) {
-      continue;
-    }
-
-    const veryNearbyFriends = myships.filter((s) =>
-      isWithinDist(s.position, ship.position, 1)
-    );
-
-    const myPower = evaluateCombat(veryNearbyFriends, nearbyEnemies, 241);
-    const enemyPower = evaluateCombat(nearbyEnemies, veryNearbyFriends, 241);
-    if (enemyPower > myPower) {
-      if (ship.nearbyfriends_includingself.length > 1) {
-        targetps[ship.index] = mix(ship.position, targetps[ship.index], 0.5); //slow down current move
-        ship.shout("g");
-        newmovestrat[ship.index] = "gather";
-      } else {
-        //targetps[ship.index] = ship.position; //cancel current move
-        ship.shout("escape");
-        newmovestrat[ship.index] = "escape";
-      }
-    }
-  }
-
+  //avoid structures
   for (const [i, ship] of myships.entries()) {
-    if (newmovestrat[i] === "gather") {
-      const futureFriendPositions = ship.nearbyfriends_includingself.map(
-        (s) => targetps[s.index]
-      );
-      const p = distanceWeightedMean(futureFriendPositions);
-      //const weights = ship.nearbyfriends_includingself.map((s) => s.energy + 1); //add 1 to avoid zero weights
-      //const p = weightedmean(futureFriendPositions, weights);
-      targetps_new[i] = p;
-    } else if (newmovestrat[i] === "escape") {
-      const p = offset(ship.position, targetps[ship.nearestfriend.index], 20);
-      //const p1 = mix(ship.position, p, 0.333)
-      targetps_new[i] = p;
-    }
-  }
+    targetps[i] = avoidCircle(
+      ship.position,
+      targetps[i],
+      stars.middle.position,
+      stars.middle.collision_radius
+    );
 
-  for (let i = 0; i < targetps.length; i++) {
-    if (targetps_new[i]) {
-      targetps[i] = targetps_new[i];
-    }
+    targetps[i] = avoidCircle(
+      ship.position,
+      targetps[i],
+      stars.enemy.position,
+      stars.enemy.collision_radius
+    );
+
+    targetps[i] = avoidCircle(
+      ship.position,
+      targetps[i],
+      stars.me.position,
+      stars.me.collision_radius
+    );
+
+    targetps[i] = avoidCircle(
+      ship.position,
+      targetps[i],
+      outposts.middle.position,
+      outposts.middle.collision_radius
+    );
   }
 }
 
 /**
- * Essentially simulate how much damage a group of attackers would do to a ground of defenders.
+ * ```raw
+ * Mean positions of ships, weighted by their energy + shipcost
  *
- * Return a number: Total damage dealt aka energy drained.
+ * note: Use ship.position as default position but can use other positions such as intended future position
+ * ```
  */
-function evaluateCombat(
-  attackerShips: Ships,
-  defenderShips: Ships,
-  range = 220
+function valueWeightedMean(
+  ships: Ships,
+  shipcost: number,
+  positions = ships.map((s) => s.position)
 ) {
-  const alreadyAttackingIndexes: Vec = [];
-  let attackerDmgDealtTotal = 0;
-  for (const defender of defenderShips) {
-    const attackersInRange = attackerShips.filter((s) =>
-      isWithinDist(s.position, defender.position, range)
-    );
-
-    const availableAttackers = ships_not_in(
-      attackersInRange,
-      alreadyAttackingIndexes
-    );
-
-    const defenderEnergy = defender.energy - lossFromAttacking(defender); //assume the enemy is also attacking
-    //const defenderEnergy = ship.energy; //dont assume
-
-    let dmgdealt = 0;
-    for (const attacker of availableAttackers) {
-      if (dmgdealt <= defenderEnergy) {
-        attacker.energize(defender);
-        dmgdealt += attackdmg(attacker);
-        alreadyAttackingIndexes.push(attacker.index);
-      }
-    }
-    attackerDmgDealtTotal += dmgdealt;
-  }
-  return attackerDmgDealtTotal;
+  //const positions = ships.map((s) => s.position);
+  const valueWeights = ships.map((s) => s.energy + shipcost);
+  return weightedmean(positions, valueWeights);
 }

@@ -47,6 +47,14 @@ interface Collections {
   info: Info;
 }
 
+interface Ship_m {
+  index: number;
+  size: number;
+  energy: number;
+}
+
+declare type Ships_m = Ship_m[];
+
 interface Ship extends Spirit {
   index: number;
 
@@ -58,19 +66,50 @@ interface Ship extends Spirit {
    * Nearest enemy.
    */
   nearestenemy: Ship;
+
   /**
-   * Friendly ships in range (without self).
-   */
-  nearbyfriends: Ships;
-  /**
-   * Friendly ships in range (including self).
+   * Friendly ships in range 200 (including self).
    */
   nearbyfriends_includingself: Ships;
+  /**
+   * Friendly ships in range 200 (without self).
+   */
+  nearbyfriends: Ships;
+
+  /**
+   * Friendly ships in range 20 (including self).
+   */
+  nearbyfriends20: Ships;
+
+  /**
+   * Friendly ships in range 40 (including self).
+   */
+  nearbyfriends40: Ships;
+
+  /**
+   * Friendly ships in range 60 (including self).
+   */
+  nearbyfriends60: Ships;
 
   /**
    * Enemy ships in range.
    */
   nearbyenemies: Ships;
+
+  /**
+   * Enemy ships in range 220.
+   */
+  nearbyenemies220: Ships;
+
+  /**
+   * Enemy ships in range 240.
+   */
+  nearbyenemies240: Ships;
+
+  /**
+   * Enemy ships in range 260.
+   */
+  nearbyenemies260: Ships;
 
   /**
    * Enemy ships in 400 range.
@@ -86,8 +125,8 @@ interface Info {
 }
 
 interface Shapes {
-  me: string;
-  enemy: string;
+  [me: string]: string;
+  [enemy: string]: string;
 }
 
 interface Playerids {
@@ -102,8 +141,8 @@ interface Stars {
 }
 
 interface Bases {
-  me: Base;
-  enemy: Base;
+  [me: string]: Base;
+  [enemy: string]: Base;
 }
 
 interface Outposts {

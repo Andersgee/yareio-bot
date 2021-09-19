@@ -93,22 +93,9 @@ export function path(
   srcship: Ship,
   destship: Ship
 ): Ships {
-  const indexes = indexpath(G, srcship.index, destship.index);
-  const pathships: Ships = indexes.map((i) => shipFromIndex(ships, i));
-  return pathships;
-}
-
-/**
- * ```raw
- * Find shortest path between ship.index=src and ship.index=dest.
- *
- * Returns a vector of ship indexes [src, a,b,c,dest] of which ship indexes are between src and dest.
- * (Returns empty vector [] if no path exists)
- * ```
- */
-export function indexpath(G: Graph, src: number, dest: number): Vec {
-  const prev = solve(G, src, dest);
-  return reconstructPath(prev, src, dest);
+  const prev = solve(G, srcship.index, destship.index);
+  const path = reconstructPath(prev, srcship.index, destship.index);
+  return path.map((i) => shipFromIndex(ships, i));
 }
 
 function solve(G: Graph, src: number, dest: number) {
@@ -167,17 +154,23 @@ function reconstructPath(prev: Vec, src: number, dest: number): Vec {
  * ```
  */
 export function constructGraph(ships: Ships): Graph {
+  return new Map(
+    ships.map((s) => [s.index, s.nearbyfriends.map((friend) => friend.index)])
+  );
+  /*
   const positions = ships.map((s) => s.position);
 
   //nodes
   const indexes = ships.map((s) => s.index);
   //const indexes = ships.map((s, i) => i);
 
+  
+
   //edges for each node
   const G = indexes.map((a, i) => {
     const node = positions[i];
     const edges = indexes.filter(
-      (b, j) => i !== j && isWithinDist(node, positions[j], 200)
+      (b, j) => i !== j && isWithinDist(node, positions[j])
     ); //ship.index of all nearby nodes except self
     return edges;
   });
@@ -190,4 +183,5 @@ export function constructGraph(ships: Ships): Graph {
   //M.get(5) gives [1,7]
   const M = new Map(G.map((edges, i) => [indexes[i], edges]));
   return M;
+  */
 }
