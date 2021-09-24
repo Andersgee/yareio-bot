@@ -1,5 +1,5 @@
-import collections from "./collections";
-import { isWithinDist, sum } from "./vec";
+import collections from "../collections";
+import { isWithinDist, sum } from "../vec";
 
 export default function explode(): Vec {
   const { myships, enemyships } = collections;
