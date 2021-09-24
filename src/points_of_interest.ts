@@ -47,7 +47,7 @@ function homefarmpoints() {
     between: p1f,
     //between_towardstar: between_towardstar_f,
     base: p2f,
-    //base_towardstar: base_towardstar_f,
+    base_towardstar: base_towardstar_f,
   };
 
   const pb = offset(bases.me.position, bases.enemy.position, -o);
@@ -63,9 +63,9 @@ function homefarmpoints() {
 
   const backward = {
     star: p0b,
-    between: between_towardstar_b,
+    between: p1b,
     //between: p1b,
-    //between_towardstar: between_towardstar_b,
+    between_towardstar: between_towardstar_b,
     //base: p2b,
     //base_towardstar: base_towardstar_b,
     base: base_towardstar_b,

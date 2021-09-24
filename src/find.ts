@@ -1,31 +1,4 @@
-import { dist, indexVec, minimum } from "./vec";
-
-/**
- * ```raw
- * Return the N ships that are closest to the points in ps.
- *
- * note:
- * 1. N = positions.length
- * 2. Ignores ships with indexes in the vector busy
- * 3. Adds the picked ships indexes to the vector busy
- * 4. The ships are chosen in same ORDER as positions: the first point will get the best match
- * ```
- */
-export function ships_at_positions(
-  ships: Ships,
-  ps: Vec2[],
-  busy: Vec = []
-): Ships {
-  const pickedships: Ships = [];
-  let freeships: Ships = [];
-  for (const p of ps) {
-    freeships = ships_not_in(ships, busy);
-    const s = ship_closest(freeships, p);
-    busy.push(s.index);
-    pickedships.push(s);
-  }
-  return pickedships;
-}
+import { dist, minimum } from "./vec";
 
 /**
  * ```raw
@@ -89,6 +62,20 @@ export function ships_in(ships: Ships, indexes: Vec): Ships {
  */
 export function ships_not_in(ships: Ships, indexes: Vec): Ships {
   return ships.filter((ship) => !indexes.includes(ship.index));
+}
+
+/**
+ * Return true if ship.index is in indexes
+ */
+export function is_in(ship: Ship, indexes: Vec): boolean {
+  return indexes.includes(ship.index);
+}
+
+/**
+ * Return true if ship.index is NOT in indexes
+ */
+export function not_in(ship: Ship, indexes: Vec): boolean {
+  return !indexes.includes(ship.index);
 }
 
 /**

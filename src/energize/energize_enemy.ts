@@ -1,17 +1,36 @@
-import collections from "./collections";
-import { ships_not_in, sortByShipenergy } from "./find";
+import collections from "../collections";
+import { ships_not_in, sortByShipenergy } from "../find";
 import {
   attackdmg,
   transferamount,
   notEmpty,
   lossFromAttacking,
-} from "./utils";
-import { isWithinDist, sum } from "./vec";
+} from "../utils";
+import { all, isWithinDist, sum } from "../vec";
 
 export default function energize_enemy(targets: targets, attacking: Vec): void {
-  const assumeNheals = memory.enemyIsSquareRush ? 0 : 1;
+  //const assumeNheals = memory.enemyIsSquareRush ? 0 : 1;
+  const assumeNheals = assumedHeals();
   energize_enemyship(targets, attacking, assumeNheals);
   energize_enemybase(targets, attacking);
+}
+
+function assumedHeals() {
+  const { enemyships } = collections;
+  if (memory.enemyIsSquareRush) {
+    const e1 = enemyships[0];
+    const enemyisgathered = all(
+      enemyships.map((s) => isWithinDist(e1.position, s.position, 180))
+    );
+    if (enemyisgathered) {
+      return 0;
+    } else {
+      return 1;
+    }
+  } else {
+    //default
+    return 1;
+  }
 }
 
 /**

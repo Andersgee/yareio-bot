@@ -1,6 +1,6 @@
-import collections from "./collections";
+import collections from "../collections";
 import energize_enemy from "./energize_enemy";
-import energize_self from "./energize_self";
+import energize_starOrSelf from "./energize_self";
 import energize_outpost from "./energize_outpost";
 import energize_friend from "./energize_friend";
 import energize_base from "./energize_base";
@@ -24,7 +24,7 @@ export default function energize(
   const busy: Vec = [];
   const attacking: Vec = [];
   energize_enemy(targets, attacking);
-  energize_self(targets, busy, attacking, nfarmers, nmidfarmers);
+  energize_starOrSelf(targets, busy, attacking, nfarmers, nmidfarmers);
   energize_outpost(targets, busy, attacking);
   energize_friend(targets, busy, attacking, nfarmers);
   energize_base(targets, busy, attacking, nfarmers);

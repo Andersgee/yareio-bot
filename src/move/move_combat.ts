@@ -1,6 +1,7 @@
-import collections from "./collections";
-import { evalCombat2 } from "./combateval2";
-import { enemyShipCost, myShipCost } from "./utils";
+import collections from "../collections";
+import combateval from "../combateval";
+import { not_in } from "../find";
+import { enemyShipCost, isEmpty, myShipCost } from "../utils";
 import {
   any,
   avoidCircle,
@@ -8,7 +9,7 @@ import {
   isWithinDist,
   offset,
   weightedmean,
-} from "./vec";
+} from "../vec";
 
 export default function move_combat(targetps: Vec2s): void {
   const alreadyHasOrders: Vec = [];
@@ -19,7 +20,11 @@ export default function move_combat(targetps: Vec2s): void {
   R240(targetps, alreadyHasOrders);
 }
 
-const MINADVANTAGE = memory.enemyIsSquareRush ? -59 : -1;
+//const MINADVANTAGE = memory.enemyIsSquareRush ? -55 : -1;
+const MINADVANTAGE = -1;
+const ATTACKDIST = memory.enemyIsSquareRush ? 179 : 180;
+const BACKDIST = memory.enemyIsSquareRush && tick < 76 ? 201 : 220;
+//const BACKDIST = 220;
 
 function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
   const { myships, enemyships } = collections;
@@ -27,7 +32,6 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
 
   const enemyshipcost = enemyShipCost();
   const myshipcost = myShipCost();
-  const R = 200;
 
   for (const ship of myships) {
     const nearbyEnemies = ship.nearbyenemies;
@@ -37,12 +41,14 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
     if (nearbyEnemies.length === 0 || alreadyHasOrders.includes(ship.index)) {
       continue;
     }
-    const myAdvantage = evalCombat2(nearbyFriends, nearbyEnemies).myAdvantage;
+    const myAdvantage = combateval(nearbyFriends, nearbyEnemies).myAdvantage;
 
-    const friendTargetPositions = nearbyFriends.map((s) => targetps[s.index]);
+    const friendTargetPositions = ship.nearbyfriends_includingself.map(
+      (s) => targetps[s.index]
+    );
     const enemyValuePoint = valueWeightedMean(nearbyEnemies, enemyshipcost);
     const friendValuePoint = valueWeightedMean(
-      nearbyFriends,
+      ship.nearbyfriends_includingself,
       myshipcost,
       friendTargetPositions
     );
@@ -54,12 +60,11 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
     if (continueAsPlannedisDangerous) {
       if (myAdvantage >= MINADVANTAGE) {
         //bring friends along in attack order
-        const r = myAdvantage > 0 ? 180 : 190;
         for (const friend of nearbyFriends) {
           targetps_new[friend.index] = offset(
             enemyValuePoint,
             friendValuePoint,
-            r
+            ATTACKDIST
           );
           alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
         }
@@ -69,7 +74,7 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
         targetps_new[ship.index] = offset(
           enemyValuePoint,
           friendValuePoint,
-          220
+          BACKDIST
         );
         ship.shout(`b0 ${myAdvantage}`);
         alreadyHasOrders.push(ship.index);
@@ -91,7 +96,6 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
 
   const enemyshipcost = enemyShipCost();
   const myshipcost = myShipCost();
-  const R = 220;
 
   for (const ship of myships) {
     const nearbyEnemies = ship.nearbyenemies220;
@@ -100,12 +104,14 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
     if (nearbyEnemies.length === 0 || alreadyHasOrders.includes(ship.index)) {
       continue;
     }
-    const myAdvantage = evalCombat2(nearbyFriends, nearbyEnemies).myAdvantage;
+    const myAdvantage = combateval(nearbyFriends, nearbyEnemies).myAdvantage;
 
-    const friendTargetPositions = nearbyFriends.map((s) => targetps[s.index]);
+    const friendTargetPositions = ship.nearbyfriends_includingself.map(
+      (s) => targetps[s.index]
+    );
     const enemyValuePoint = valueWeightedMean(nearbyEnemies, enemyshipcost);
     const friendValuePoint = valueWeightedMean(
-      nearbyFriends,
+      ship.nearbyfriends_includingself,
       myshipcost,
       friendTargetPositions
     );
@@ -116,13 +122,12 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
 
     if (continueAsPlannedisDangerous) {
       if (myAdvantage >= MINADVANTAGE) {
-        const r = myAdvantage > 0 ? 180 : 190;
         //bring friends along in attack order
         for (const friend of nearbyFriends) {
           targetps_new[friend.index] = offset(
             enemyValuePoint,
             friendValuePoint,
-            r
+            ATTACKDIST
           );
           alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
         }
@@ -132,7 +137,7 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
         targetps_new[ship.index] = offset(
           enemyValuePoint,
           friendValuePoint,
-          240
+          BACKDIST + 20
         );
         ship.shout(`b2 ${myAdvantage}`);
         alreadyHasOrders.push(ship.index);
@@ -154,7 +159,6 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
 
   const enemyshipcost = enemyShipCost();
   const myshipcost = myShipCost();
-  const R = 240;
 
   for (const ship of myships) {
     const nearbyEnemies = ship.nearbyenemies240;
@@ -163,12 +167,14 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
     if (nearbyEnemies.length === 0 || alreadyHasOrders.includes(ship.index)) {
       continue;
     }
-    const myAdvantage = evalCombat2(nearbyFriends, nearbyEnemies).myAdvantage;
+    const myAdvantage = combateval(nearbyFriends, nearbyEnemies).myAdvantage;
 
-    const friendTargetPositions = nearbyFriends.map((s) => targetps[s.index]);
+    const friendTargetPositions = ship.nearbyfriends_includingself.map(
+      (s) => targetps[s.index]
+    );
     const enemyValuePoint = valueWeightedMean(nearbyEnemies, enemyshipcost);
     const friendValuePoint = valueWeightedMean(
-      nearbyFriends,
+      ship.nearbyfriends_includingself,
       myshipcost,
       friendTargetPositions
     );
@@ -179,13 +185,12 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
 
     if (continueAsPlannedisDangerous) {
       if (myAdvantage >= MINADVANTAGE) {
-        const r = myAdvantage > 0 ? 180 : 190;
         //bring friends along in attack order
         for (const friend of nearbyFriends) {
           targetps_new[friend.index] = offset(
             enemyValuePoint,
             friendValuePoint,
-            r
+            ATTACKDIST
           );
           alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
         }
@@ -195,7 +200,7 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
         targetps_new[ship.index] = offset(
           enemyValuePoint,
           friendValuePoint,
-          260
+          BACKDIST + 40
         );
         ship.shout(`b4 ${myAdvantage}`);
         alreadyHasOrders.push(ship.index);
@@ -215,7 +220,7 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
  * A Ship can only move 20 units. make targetps reflect that.
  */
 function clamp_movement(targetps: Vec2s) {
-  const { myships, stars, outposts } = collections;
+  const { myships, stars, outposts, bases } = collections;
   for (const [i, ship] of myships.entries()) {
     if (targetps[i]) {
       //its possible ship was never assigned at targetp ut unlikely
@@ -254,6 +259,20 @@ function clamp_movement(targetps: Vec2s) {
       targetps[i],
       outposts.middle.position,
       outposts.middle.collision_radius
+    );
+
+    targetps[i] = avoidCircle(
+      ship.position,
+      targetps[i],
+      bases.me.position,
+      bases.me.collision_radius
+    );
+
+    targetps[i] = avoidCircle(
+      ship.position,
+      targetps[i],
+      bases.enemy.position,
+      bases.enemy.collision_radius
     );
   }
 }

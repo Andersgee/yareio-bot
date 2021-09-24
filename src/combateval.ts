@@ -1,117 +1,224 @@
 import collections from "./collections";
-import {
-  ships_not_in,
-  sortByShipenergy,
-  sortByShipenergyReverse,
-} from "./find";
-import { attackdmg, lossFromAttacking } from "./utils";
-import { maximum } from "./vec";
+import { ships_not_in } from "./find";
+import { sum } from "./vec";
 
-function shipcost(ship: Ship, player = "enemy"): number {
+/**
+ * ```raw
+ * Evaluate (to the end) what happens if ships attack each other.
+ *
+ * return some metrics. Most importantly "myAdvantage"
+ * ```
+ */
+export default function combateval(
+  myships: Ships,
+  enemyships: Ships
+): {
+  myAdvantage: number;
+  meIsLastStanding: boolean;
+  myEnergycost: number;
+  enemyEnergycost: number;
+  myDeadShipsCost: number;
+  enemyDeadShipsCost: number;
+  myValueLoss: number;
+  enemyValueLoss: number;
+} {
+  let [myships_m, enemyships_m] = evalBattle1tick(myships, enemyships);
+
+  let someoneCanAttack =
+    sum(myships_m.map((s) => s.energy)) +
+      sum(enemyships_m.map((s) => s.energy)) >
+    0;
+  while (someoneCanAttack && myships_m.length > 0 && enemyships_m.length > 0) {
+    [myships_m, enemyships_m] = evalBattle1tick(myships_m, enemyships_m);
+    someoneCanAttack =
+      sum(myships_m.map((s) => s.energy)) +
+        sum(enemyships_m.map((s) => s.energy)) >
+      0;
+  }
+  const meIsLastStanding = myships_m.length > enemyships_m.length;
+
+  const myEnergycost =
+    sum(myships.map((s) => s.energy)) - sum(myships_m.map((s) => s.energy));
+  const enemyEnergycost =
+    sum(enemyships.map((s) => s.energy)) -
+    sum(enemyships_m.map((s) => s.energy));
+
+  const myAliveIndexes = myships_m.map((s) => s.index);
+  const myDeadShips = ships_not_in(myships, myAliveIndexes);
+  const myDeadShipsCost = sum(myDeadShips.map((s) => shipcost(s, "me")));
+
+  const enemyAliveIndexes = enemyships_m.map((s) => s.index);
+  const enemyDeadShips = ships_not_in(enemyships, enemyAliveIndexes);
+  const enemyDeadShipsCost = sum(
+    enemyDeadShips.map((s) => shipcost(s, "enemy"))
+  );
+
+  const myValueLoss = myEnergycost + myDeadShipsCost;
+  const enemyValueLoss = enemyEnergycost + enemyDeadShipsCost;
+
+  const myAdvantage = enemyValueLoss - myValueLoss;
+
+  return {
+    myAdvantage,
+    meIsLastStanding,
+    myEnergycost,
+    enemyEnergycost,
+    myDeadShipsCost,
+    enemyDeadShipsCost,
+    myValueLoss,
+    enemyValueLoss,
+  };
+}
+
+/**
+ * Lowest energy first
+ */
+function sortByShipenergy(ships: Ships | Ships_m): Ships_m {
+  return ships.slice().sort((a, b) => a.energy - b.energy);
+}
+
+/**
+ * Biggest energy first
+ */
+function sortByShipenergyReverse(ships: Ships | Ships_m): Ships_m {
+  return ships.slice().sort((a, b) => b.energy - a.energy);
+}
+/*
+function shipcost(ship: Ship | Ship_m, player = "enemy"): number {
   const { bases, shapes } = collections;
   const cost = bases[player].current_spirit_cost;
   if (shapes[player] === "squares") {
     return cost - 100;
   } else if (shapes[player] === "circles") {
-    return (cost - 10) * ship.size; //for circles, ship.size effectively is NUMBER of ships (single ship has size 1)
+    return cost * ship.size - 10 * ship.size;
   } else if (shapes[player] === "triangles") {
     return cost - 30;
   }
   return cost;
 }
+*/
+function shipcost(ship: Ship | Ship_m, player = "enemy"): number {
+  const { bases, shapes } = collections;
+  //const cost = bases[player].current_spirit_cost;
 
-function evalAttack(
-  attackers: Ships,
-  defenders: Ships,
-  defenderplayer: string
-): [number, Vec] {
-  const sortedAttackers = sortByShipenergyReverse(attackers);
-  const sortedDefenders = sortByShipenergy(defenders);
-
-  const alreadyAttackingIndexes = [];
-  let attackerDmgDealtTotal = 0;
-  const deadDefenderIndexes = [];
-  for (const defender of sortedDefenders) {
-    const availableAttackers = ships_not_in(
-      sortedAttackers,
-      alreadyAttackingIndexes
-    );
-
-    //const defenderEnergy = defender.energy
-    const defenderEnergy = defender.energy - lossFromAttacking(defender);
-
-    let dmgdealt = 0;
-    for (const attacker of availableAttackers) {
-      if (dmgdealt <= defenderEnergy) {
-        dmgdealt += attackdmg(attacker);
-        alreadyAttackingIndexes.push(attacker.index);
-      }
-    }
-    dmgdealt = Math.min(dmgdealt, defenderEnergy + 1);
-    if (dmgdealt > defenderEnergy) {
-      //defender dies, this has to have some cost
-      dmgdealt += shipcost(defender, defenderplayer);
-      deadDefenderIndexes.push(defender.index);
-    }
-    attackerDmgDealtTotal += dmgdealt;
+  if (shapes[player] === "squares") {
+    return 360 - 100;
+  } else if (shapes[player] === "circles") {
+    return (25 - 10) * ship.size; //for circles, ship.size effectively is NUMBER of ships (single ship has size 1)
+  } else {
+    //if (shapes[player] === "triangles") {
+    return 90 - 30;
   }
-  return [attackerDmgDealtTotal, deadDefenderIndexes];
 }
 
-/**
- * ```raw
- * A function that returns [advantage, indexesThatShouldBackOff]
- *
- * note: Only looks at a single tick.
- * 1. if advantage is zero: probably equal number of ships and no ship can be killed.
- * 2. if advantage is positive: go forward with everyone except the ones in indexesThatShouldBackOff
- * 3. if advantage is negative: ideally ALL ships should back off regardless of indexesThatShouldBackOff,
- * but most importantly the ones in indexesThatShouldBackOff since 1 tick can be survived without dying ships even though advantage is negative.
- * ```
- */
-export function evalCombat(myships: Ships, enemyships: Ships): [number, Vec] {
-  //first of all, try without excluding any of my ships
-  const basic: [number, Vec][] = [
-    [
-      evalAttack(myships, enemyships, "enemy")[0] -
-        evalAttack(enemyships, myships, "me")[0],
-      [],
-    ],
-  ];
+function lossFromAttacking(ship: Ship_m): number {
+  //ship.size, but only as much energy as it has.
+  return Math.min(ship.size, ship.energy);
+}
 
-  //exclude ships until no ship can die in a single tick
-  let myDeadIndexes_all: Vec = [];
-  let [valueDrainedFromMe, myDeadIndexes] = evalAttack(
-    enemyships,
-    myships,
-    "me"
+function attackdmg(ship: Ship_m): number {
+  //2*ship.size, but only as much energy as it has.
+  return 2 * Math.min(ship.size, ship.energy);
+}
+
+function evalBattle1tick(
+  ships1: Ships | Ships_m,
+  ships2: Ships | Ships_m
+): [Ships_m, Ships_m] {
+  //first make ships1 (order by LARGEST first) attack ships2 (order by LOWEST first)
+  const attackers = sortByShipenergyReverse(ships1); //biggest first
+  const defenders = sortByShipenergy(ships2); //lowest first
+
+  const energy_attackers = attackers.map((s) => s.energy);
+  const energy_defenders = defenders.map((s) => s.energy);
+
+  const attackers_alreadyattacked = new Array(energy_attackers.length).fill(
+    false
   );
-  myDeadIndexes_all = myDeadIndexes_all.concat(myDeadIndexes);
-  while (myDeadIndexes.length > 0) {
-    [valueDrainedFromMe, myDeadIndexes] = evalAttack(
-      enemyships,
-      ships_not_in(myships, myDeadIndexes_all),
-      "me"
-    );
-    myDeadIndexes_all = myDeadIndexes_all.concat(myDeadIndexes);
+  for (const [i, defender] of defenders.entries()) {
+    const defloss = lossFromAttacking(defender);
+    for (const [j, attacker] of attackers.entries()) {
+      if (energy_defenders[i] - defloss >= 0 && !attackers_alreadyattacked[j]) {
+        energy_defenders[i] -= attackdmg(attacker);
+        energy_attackers[j] -= lossFromAttacking(attacker);
+        attackers_alreadyattacked[j] = true;
+      }
+    }
   }
+  const energy_attackers_change = attackers.map(
+    (s, i) => energy_attackers[i] - s.energy
+  );
+  const energy_defenders_change = defenders.map(
+    (s, i) => energy_defenders[i] - s.energy
+  );
+  /////
 
-  //console.log("myDeadIndexes_all: ",myDeadIndexes_all)
+  const attackers2 = sortByShipenergyReverse(ships2); //biggest first
+  const defenders2 = sortByShipenergy(ships1); //lowest first
+  const energy_attackers2 = attackers2.map((s) => s.energy);
+  const energy_defenders2 = defenders2.map((s) => s.energy);
 
-  //now remove some (or all) of myDeadIndexes from my attack and find the MAXIMUM possible
-  // difference valueDrainedFromEnemy-valueDrainedFromMe
-  const excluding: [number, Vec][] = myDeadIndexes_all.map((x, i, v) => {
-    const excluded = v.slice(0, i + 1);
-    const myships_some_excluded = ships_not_in(myships, excluded);
-    const mydmg = evalAttack(myships_some_excluded, enemyships, "enemy")[0];
-    const enemydmg = evalAttack(enemyships, myships_some_excluded, "me")[0];
-    return [mydmg - enemydmg, excluded];
-  });
+  const attackers_alreadyattacked2 = new Array(energy_attackers2.length).fill(
+    false
+  );
+  for (const [i, defender] of defenders2.entries()) {
+    const defloss = lossFromAttacking(defender);
+    for (const [j, attacker] of attackers2.entries()) {
+      if (
+        energy_defenders2[i] - defloss >= 0 &&
+        !attackers_alreadyattacked2[j]
+      ) {
+        energy_defenders2[i] -= attackdmg(attacker);
+        energy_attackers2[j] -= lossFromAttacking(attacker);
+        attackers_alreadyattacked2[j] = true;
+      }
+    }
+  }
+  const energy_attackers2_change = attackers2
+    .map((s, i) => energy_attackers2[i] - s.energy)
+    .reverse();
+  const energy_defenders2_change = defenders2
+    .map((s, i) => energy_defenders2[i] - s.energy)
+    .reverse();
+  ////
 
-  //we now have a list of [advantage, [excludedindexes] pairs
-  const advantage_excludedindexes = basic.concat(excluding);
-  //console.log(advantage_excludedindexes)
-  //find the maximum advantage and return the best [advantage, [excludedindexes] pair
-  const advantages = advantage_excludedindexes.map((ae) => ae[0]);
-  return advantage_excludedindexes[maximum(advantages).index];
+  //energy_attackers_change now corresponds to energy_defenders2_change and same order
+  //energy_defenders now corresponds to energy_attackers2_change and same order
+
+  const consolidated_attackerchange = energy_attackers_change.map(
+    (x, i) => x + energy_defenders2_change[i]
+  );
+  const consolidated_defenderchange = energy_defenders_change.map(
+    (x, i) => x + energy_attackers2_change[i]
+  );
+
+  const resulting_energy_attackers = attackers.map(
+    (s, i) => s.energy + consolidated_attackerchange[i]
+  );
+  const resulting_energy_defenders = defenders.map(
+    (s, i) => s.energy + consolidated_defenderchange[i]
+  );
+
+  //console.log("resulting_energy_attackers:",resulting_energy_attackers)
+  //console.log("resulting_energy_defenders: ",resulting_energy_defenders)
+
+  const resulting_attackers = attackers
+    .map((s, i) => ({
+      index: s.index,
+      size: s.size,
+      energy: resulting_energy_attackers[i],
+    }))
+    .filter((s) => s.energy >= 0);
+  const resulting_defenders = defenders
+    .map((s, i) => ({
+      index: s.index,
+      size: s.size,
+      energy: resulting_energy_defenders[i],
+    }))
+    .filter((s) => s.energy >= 0);
+
+  //console.log("resulting_attackers:",resulting_attackers)
+  //console.log("resulting_defenders: ",resulting_defenders)
+
+  return [resulting_attackers, resulting_defenders];
 }

@@ -1,8 +1,8 @@
-import move from "./move";
-import energize from "./energize";
+import move from "./move/move";
+import energize from "./energize/energize";
 import sendcommands from "./sendcommands";
 import gamestage from "./gamestage";
-import explode from "./explode";
+import explode from "./ability/explode";
 import sendendgamecommands from "./sendendgamecommands";
 import collections from "./collections";
 

@@ -1,5 +1,5 @@
-import collections from "./collections";
-import { ships_not_in, sortByNearestenemyDistance } from "./find";
+import collections from "../collections";
+import { ships_not_in } from "../find";
 import {
   canTransfer,
   maxStarFarmers,
@@ -8,8 +8,8 @@ import {
   sustainableStarEnergy,
   sustainableStarFarmers,
   transferamount,
-} from "./utils";
-import { isWithinDist } from "./vec";
+} from "../utils";
+import { isWithinDist } from "../vec";
 
 /**
  * energize_self but with guard aginst overfarming 8charge star as function of its energy and nfarmers)
@@ -36,14 +36,17 @@ export default function energize_starOrSelf(
     energize_star(targets, stars.middle, busy, nmidfarmers, attacking);
   }
 
-  const stayfullhome = memory.enemyIsSquareRush;
-  energize_self(targets, stars.me, busy, attacking, stayfullhome);
+  const stayfullhomestar = memory.enemyIsSquareRush;
+  energize_self(targets, stars.me, busy, attacking, stayfullhomestar);
 
-  const stayfullmid =
+  const stayfullmidstar =
     memory.enemyIsSquareRush ||
     (memory.gamestage === 0 && myOutpostEnergy() > 30) ||
     (memory.gamestage === 1 && myOutpostEnergy() > 200 && nfarmers < Nmid); //meant for the early controlmid() ships
-  energize_self(targets, stars.middle, busy, attacking, stayfullmid);
+  energize_self(targets, stars.middle, busy, attacking, stayfullmidstar);
+
+  const stayfullenemystar = true;
+  energize_self(targets, stars.enemy, busy, attacking, stayfullenemystar);
 }
 
 /**
@@ -63,14 +66,13 @@ function energize_self(
   );
 
   const N_max =
-    myOutpostEnergy() > 600 ? maxStarFarmers(star, myships[0].size) : 9999;
+    myOutpostEnergy() > 600 ? maxStarFarmers(star, myships[0].size) : 999;
   const maxselfers = memory.enemyIsSquareRush ? 999 : N_max / 2;
   let nselfers = 0;
 
   const shoulEven = (s: Ship) => notFull(s) && nselfers < maxselfers;
   const shouldOdd = (s: Ship) =>
-    notFull(s) &&
-    (stayfull || (s.nearbyenemies400.length > 0 && nselfers < maxselfers));
+    notFull(s) && (stayfull || s.nearbyenemies400.length > 0);
 
   const haveEssentially9ships = essentially9();
   for (const [i, ship] of ships.entries()) {
@@ -128,7 +130,8 @@ function energize_star(
     const ships = myships.filter(
       (s) =>
         isWithinDist(star.position, s.position) &&
-        s.nearbyenemies400.length === 0
+        s.nearbyenemies400.length === 0 &&
+        canTransfer(s)
     );
 
     for (const [i, ship] of ships.entries()) {

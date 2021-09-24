@@ -1,7 +1,7 @@
-import collections from "./collections";
-import { ships_not_in } from "./find";
-import { myOutpostEnergy, notEmpty } from "./utils";
-import { isWithinDist } from "./vec";
+import collections from "../collections";
+import { ships_not_in } from "../find";
+import { myOutpostEnergy, notEmpty } from "../utils";
+import { isWithinDist } from "../vec";
 
 export default function energize_outpost(
   targets: targets,
@@ -12,7 +12,8 @@ export default function energize_outpost(
   const outpost = outposts.middle;
 
   const shouldEnergizeOutpost =
-    outposts.middle.energy === 0 || (tick > 61 && myOutpostEnergy() <= 600);
+    !memory.enemyIsSquareRush &&
+    (outposts.middle.energy === 0 || (tick > 61 && myOutpostEnergy() <= 600));
 
   if (shouldEnergizeOutpost) {
     const ships = ships_not_in(myships, busy.concat(attacking)).filter(

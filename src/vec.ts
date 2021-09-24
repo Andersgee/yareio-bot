@@ -69,14 +69,23 @@ function directionSimilarity(v1: Vec2, v2: Vec2): number {
   return dot(normalize(v1), normalize(v2));
 }
 
+/**
+ * [v1[0] + v2[0], v1[1] + v2[1]]
+ */
 export function add(v1: Vec2, v2: Vec2): Vec2 {
   return [v1[0] + v2[0], v1[1] + v2[1]];
 }
 
+/**
+ * [v[0] * k, v[1] * k]
+ */
 export function mul(v: Vec2, k: number): Vec2 {
   return [v[0] * k, v[1] * k];
 }
 
+/**
+ * clamp x to lie in a..b range
+ */
 export function clamp(x: number, a: number, b: number): number {
   return Math.min(b, Math.max(a, x));
 }
@@ -120,7 +129,7 @@ export function offset(p1: Vec2, p2: Vec2, d: number): Vec2 {
   if (Math.abs(d) < 0.000000001) {
     return p1;
   }
-  const unitvec = normalize(vecFromPositions(p1, p2));
+  const unitvec = unitvecFromPositions(p1, p2);
   const v = mul(unitvec, d);
   const p = add(p1, v);
   return p;
@@ -311,11 +320,11 @@ function perpendicularCCW(v: Vec2): Vec2 {
  * ```raw
  * Return a point adjusted_p the ship can move to that avoids the circle c with radius r
  *
- * 1. if moving will not put ship inside: just move
- * 2. if inside:
+ * 1. If moving will NOT put ship inside: just move
+ * 2. IF INSIDE:
  *  2.1 if near edge: go diagonal (land on circumference) in the direction most similar to desired_p
  *  2.2 if further in: go straight outward from circle center
- * 3. if outside
+ * 3. IF OUTSIDE:
  *  3.1 (if step1 wasnt triggered) go along tangent direction most similar to desired_p
  *```
  */

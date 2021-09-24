@@ -51,6 +51,13 @@ export function almostFull(s: Ship, n = 1): boolean {
 }
 
 /**
+ * s.energy <= s.size * n
+ */
+export function almostEmpty(s: Ship, n = 1): boolean {
+  return s.energy <= s.size * n;
+}
+
+/**
  * ```raw
  * True if ship has energy to (fully) transfer n times. default n=1
  *

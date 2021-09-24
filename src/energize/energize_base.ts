@@ -1,13 +1,13 @@
-import collections from "./collections";
-import { ships_not_in } from "./find";
-import { constructGraph, path_byclosestavailabledestination } from "./graph";
+import collections from "../collections";
+import { ships_not_in } from "../find";
+import { constructGraph, path_byclosestavailabledestination } from "../graph";
 import {
   anyShipIsWithinDist,
   canTransfer,
   isFull,
   maxStarFarmers,
-} from "./utils";
-import { all, isWithinDist } from "./vec";
+} from "../utils";
+import { all, isWithinDist } from "../vec";
 
 export default function energize_base(
   targets: targets,
@@ -20,12 +20,12 @@ export default function energize_base(
   const enemyIsNearBase = anyShipIsWithinDist(
     enemyships,
     bases.me.position,
-    600
+    420
   );
   const Nhome_max = maxStarFarmers(stars.me, myships[0].size);
 
   const shouldHealBeforeTransferring =
-    memory.gamestage > 0 || enemyIsNearBase || nfarmers >= Nhome_max;
+    memory.gamestage > 0 || nfarmers >= Nhome_max;
 
   let transfercondition = (s: Ship) => canTransfer(s);
   if (shouldHealBeforeTransferring) {
@@ -34,8 +34,11 @@ export default function energize_base(
 
   const shouldEnergizeBase =
     !memory.enemyIsSquareRush ||
-    (memory.enemyIsSquareRush && myships.length < 8) ||
-    (memory.enemyIsSquareRush && myships.length < 9 && bases.me.energy <= 87);
+    (memory.enemyIsSquareRush && myships.length < 8 && tick < 46) ||
+    (memory.enemyIsSquareRush &&
+      myships.length < 9 &&
+      bases.me.energy <= 87 &&
+      tick < 46);
 
   if (shouldEnergizeBase) {
     energize_nearstar2base(
@@ -54,7 +57,7 @@ export default function energize_base(
     );
   }
 
-  if (!shouldHealBeforeTransferring && shouldEnergizeBase) {
+  if (!shouldHealBeforeTransferring && shouldEnergizeBase && !enemyIsNearBase) {
     energize_any2base(targets, busy);
   }
 }

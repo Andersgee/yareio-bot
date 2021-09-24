@@ -1,6 +1,6 @@
 import collections from "./collections";
 import { enemyOutpostEnergy, maxStarFarmers } from "./utils";
-import { all, isWithinDist, sum } from "./vec";
+import { all, any, isWithinDist, sum } from "./vec";
 
 export default function gamestage(): void {
   const { stars, myships } = collections;
@@ -17,13 +17,14 @@ export default function gamestage(): void {
   }
 
   memory.enemyIsSquareRush = memory.enemyIsSquareRush || enemyIsSquareRushing();
-
+  //memory.gamestage = 0;
   //debug:
   /*
   if (myships.length === 8) {
     memory.enemyIsSquareRush = true;
   }
-  */
+*/
+  memory.enemyWasNearMyBase = memory.enemyWasNearMyBase || enemyNearMyBase();
 }
 
 function shouldAllIn(): boolean {
@@ -62,4 +63,15 @@ function enemyIsSquareRushing() {
     tick < 100;
 
   return enemyIsRushing;
+}
+
+/**
+ * Return true if enemy is near my base
+ */
+function enemyNearMyBase() {
+  const { enemyships, bases } = collections;
+
+  return any(
+    enemyships.map((s) => isWithinDist(s.position, bases.me.position, 590))
+  );
 }

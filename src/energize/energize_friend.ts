@@ -1,16 +1,14 @@
-import collections from "./collections";
-import { ships_in, ships_not_in, sortByNearestenemyDistance } from "./find";
-import { constructGraph, path_byclosestavailabledestination } from "./graph";
+import collections from "../collections";
+import { ships_in, ships_not_in, sortByNearestenemyDistance } from "../find";
+import { constructGraph, path_byclosestavailabledestination } from "../graph";
 import {
   anyShipIsWithinDist,
   canTransfer,
   hasRoom,
-  hasRoomLess,
-  isNearStar,
   maxStarFarmers,
   notNearStar,
-} from "./utils";
-import { all, isWithinDist } from "./vec";
+} from "../utils";
+import { all, isWithinDist } from "../vec";
 
 /**
  * 1. heal my attacking ships (they always have room for 1 heal if they attack)
@@ -58,7 +56,7 @@ export default function energize_friend(
   );
   const Nhealsrequired = myshipsNotattackingNotNearstar.map(requestedHeals);
   if (shouldHeal) {
-    console.log(`N: ${JSON.stringify(Nhealsrequired)}`);
+    //console.log(`N: ${JSON.stringify(Nhealsrequired)}`);
     //console.log(Nhealsrequired);
     for (const [i, ship] of myshipsNotattackingNotNearstar.entries()) {
       for (let n = 0; n < Nhealsrequired[i]; n++) {

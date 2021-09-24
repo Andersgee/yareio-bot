@@ -1,12 +1,4 @@
-import {
-  falses,
-  isWithinDist,
-  newVec,
-  popfirst,
-  pushfirst,
-  dist,
-  minimum,
-} from "./vec";
+import { falses, newVec, popfirst, pushfirst, dist, minimum } from "./vec";
 import { shipFromIndex } from "./find";
 
 import collections from "./collections";
