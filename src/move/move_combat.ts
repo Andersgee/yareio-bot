@@ -1,15 +1,9 @@
 import collections from "../collections";
 import combateval from "../combateval";
 import { not_in } from "../find";
+import { avoidCircle } from "../positioning";
 import { enemyShipCost, isEmpty, myShipCost } from "../utils";
-import {
-  any,
-  avoidCircle,
-  dist,
-  isWithinDist,
-  offset,
-  weightedmean,
-} from "../vec";
+import { any, dist, isWithinDist, offset, weightedmean } from "../vec";
 
 export default function move_combat(targetps: Vec2s): void {
   const alreadyHasOrders: Vec = [];
@@ -20,11 +14,9 @@ export default function move_combat(targetps: Vec2s): void {
   R240(targetps, alreadyHasOrders);
 }
 
-//const MINADVANTAGE = memory.enemyIsSquareRush ? -55 : -1;
 const MINADVANTAGE = -1;
-const ATTACKDIST = memory.enemyIsSquareRush ? 179 : 180;
-const BACKDIST = memory.enemyIsSquareRush && tick < 76 ? 201 : 220;
-//const BACKDIST = 220;
+const ATTACKDIST = 180;
+const BACKDIST = 220;
 
 function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
   const { myships, enemyships } = collections;
@@ -70,6 +62,17 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
         }
         ship.shout(`a0 ${myAdvantage}`);
       } else {
+        for (const friend of nearbyFriends) {
+          if (not_in(friend, alreadyHasOrders)) {
+            targetps_new[friend.index] = offset(
+              enemyValuePoint,
+              friendValuePoint,
+              BACKDIST
+            );
+            alreadyHasOrders.push(friend.index); //friend might already be in alreadyHasOrders but that doesnt matter
+          }
+        }
+        /*
         //back (solo)
         targetps_new[ship.index] = offset(
           enemyValuePoint,
@@ -78,6 +81,7 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
         );
         ship.shout(`b0 ${myAdvantage}`);
         alreadyHasOrders.push(ship.index);
+        */
       }
     }
   }
@@ -133,6 +137,17 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
         }
         ship.shout(`a2 ${myAdvantage}`);
       } else {
+        for (const friend of nearbyFriends) {
+          if (not_in(friend, alreadyHasOrders)) {
+            targetps_new[friend.index] = offset(
+              enemyValuePoint,
+              friendValuePoint,
+              BACKDIST + 20
+            );
+            alreadyHasOrders.push(friend.index);
+          }
+        }
+        /*
         //back (solo)
         targetps_new[ship.index] = offset(
           enemyValuePoint,
@@ -141,6 +156,7 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
         );
         ship.shout(`b2 ${myAdvantage}`);
         alreadyHasOrders.push(ship.index);
+        */
       }
     }
   }
@@ -196,6 +212,17 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
         }
         ship.shout(`a4 ${myAdvantage}`);
       } else {
+        for (const friend of nearbyFriends) {
+          if (not_in(friend, alreadyHasOrders)) {
+            targetps_new[friend.index] = offset(
+              enemyValuePoint,
+              friendValuePoint,
+              BACKDIST + 40
+            );
+            alreadyHasOrders.push(friend.index);
+          }
+        }
+        /*
         //back (solo)
         targetps_new[ship.index] = offset(
           enemyValuePoint,
@@ -204,6 +231,7 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
         );
         ship.shout(`b4 ${myAdvantage}`);
         alreadyHasOrders.push(ship.index);
+        */
       }
     }
   }
@@ -220,60 +248,38 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
  * A Ship can only move 20 units. make targetps reflect that.
  */
 function clamp_movement(targetps: Vec2s) {
-  const { myships, stars, outposts, bases } = collections;
+  const { myships, stars, outposts, bases, pylons } = collections;
   for (const [i, ship] of myships.entries()) {
     if (targetps[i]) {
-      //its possible ship was never assigned at targetp ut unlikely
       const d = Math.min(20, dist(ship.position, targetps[i]));
       targetps[i] = offset(ship.position, targetps[i], d);
     } else {
+      //its possible ship was never assigned at targetp but unlikely
       targetps[i] = ship.position;
     }
   }
 
   //avoid structures
   for (const [i, ship] of myships.entries()) {
-    targetps[i] = avoidCircle(
-      ship.position,
-      targetps[i],
-      stars.middle.position,
-      stars.middle.collision_radius
-    );
-
-    targetps[i] = avoidCircle(
-      ship.position,
-      targetps[i],
-      stars.enemy.position,
-      stars.enemy.collision_radius
-    );
-
-    targetps[i] = avoidCircle(
-      ship.position,
-      targetps[i],
-      stars.me.position,
-      stars.me.collision_radius
-    );
-
-    targetps[i] = avoidCircle(
-      ship.position,
-      targetps[i],
-      outposts.middle.position,
-      outposts.middle.collision_radius
-    );
-
-    targetps[i] = avoidCircle(
-      ship.position,
-      targetps[i],
-      bases.me.position,
-      bases.me.collision_radius
-    );
-
-    targetps[i] = avoidCircle(
-      ship.position,
-      targetps[i],
-      bases.enemy.position,
-      bases.enemy.collision_radius
-    );
+    for (const structure of [
+      stars.big,
+      stars.enemy,
+      stars.me,
+      stars.middle,
+      bases.big,
+      bases.enemy,
+      bases.me,
+      bases.middle,
+      outposts.middle,
+      pylons.middle,
+    ]) {
+      targetps[i] = avoidCircle(
+        ship.position,
+        targetps[i],
+        structure.position,
+        structure.collision_radius
+      );
+    }
   }
 }
 

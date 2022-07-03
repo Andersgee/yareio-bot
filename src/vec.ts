@@ -1,19 +1,85 @@
-/**
- * Return a vector without duplicate values.
- */
-export function unique(v: Vec): Vec {
-  return [...new Set(v)];
+/** [v1[0] + v2[0], v1[1] + v2[1]] */
+export function add(v1: Vec2, v2: Vec2): Vec2 {
+  return [v1[0] + v2[0], v1[1] + v2[1]];
 }
 
-/**
- * Sum values of v
- */
+/** [v[0] * k, v[1] * k] */
+export function mul(v: Vec2, k: number): Vec2 {
+  return [v[0] * k, v[1] * k];
+}
+/** [v[0] / k, v[1] / k]*/
+export function div(v: Vec2, k: number): Vec2 {
+  return [v[0] / k, v[1] / k];
+}
+
+/** Length of a Vec2 */
+export function len(v: Vec2): number {
+  return Math.hypot(v[0], v[1]);
+}
+
+/** Sum values of v */
 export function sum(v: number[]): number {
   let sum = 0;
   for (const x of v) {
     sum += x;
   }
   return sum;
+}
+
+export function dot(v1: Vec2, v2: Vec2): number {
+  return v1[0] * v2[0] + v1[1] * v2[1];
+}
+
+export function normalize(v: Vec2): Vec2 {
+  const l = len(v);
+  return [v[0] / l, v[1] / l];
+}
+
+/**
+ * Return the minimum value and its index in vector vec
+ * (return value: Infinity if vec=[])
+ */
+export function minimum(vec: Vec): { value: number; index: number } {
+  let index = -1;
+  let value = Infinity;
+  for (const [i, v] of vec.entries()) {
+    if (v < value) {
+      value = v;
+      index = i;
+    }
+  }
+  return { value, index };
+}
+
+/**
+ * Return the maximum value and its index in vector vec
+ * * (return value: -Infinity if vec=[])
+ */
+export function maximum(vec: Vec): { value: number; index: number } {
+  let index = -1;
+  let value = -Infinity;
+  for (const [i, v] of vec.entries()) {
+    if (v > value) {
+      value = v;
+      index = i;
+    }
+  }
+  return { value, index };
+}
+
+/**
+ * offset p1 a maximum of 20 units toward p2 (stop at p2)
+ */
+export function offsetmax20(p1: Vec2, p2: Vec2): Vec2 {
+  const d = Math.min(20, dist(p1, p2));
+  return offset(p1, p2, d);
+}
+
+/**
+ * Return a vector without duplicate values.
+ */
+export function unique(v: Vec): Vec {
+  return [...new Set(v)];
 }
 
 /**
@@ -32,12 +98,12 @@ export function unitvecFromPositions(p1: Vec2, p2: Vec2): Vec2 {
 
 export function dist(p1: Vec2, p2: Vec2): number {
   const v = vecFromPositions(p1, p2);
-  return Math.hypot(v[0], v[1]);
+  return len(v);
 }
 
 /**
  * ```raw
- * True if distance between p1 and p2 is less than d.
+ * True if distance between p1 and p2 is leq than d.
  *
  * default d=200 which is ship range
  * ```
@@ -47,40 +113,10 @@ export function isWithinDist(p1: Vec2, p2: Vec2, d = 200): boolean {
 }
 
 /**
- * Length of a Vec2
+ * normalization followed by dot product gives a measure of direction similarity -1..1 zero means perpendicular
  */
-export function len(v: Vec2): number {
-  return Math.hypot(v[0], v[1]);
-}
-
-export function normalize(v: Vec2): Vec2 {
-  const l = len(v);
-  return [v[0] / l, v[1] / l];
-}
-
-function dot(v1: Vec2, v2: Vec2): number {
-  return v1[0] * v2[0] + v1[1] * v2[1];
-}
-
-/**
- * normalization followed by dot product gives a measure of direction similarity
- */
-function directionSimilarity(v1: Vec2, v2: Vec2): number {
+export function directionSimilarity(v1: Vec2, v2: Vec2): number {
   return dot(normalize(v1), normalize(v2));
-}
-
-/**
- * [v1[0] + v2[0], v1[1] + v2[1]]
- */
-export function add(v1: Vec2, v2: Vec2): Vec2 {
-  return [v1[0] + v2[0], v1[1] + v2[1]];
-}
-
-/**
- * [v[0] * k, v[1] * k]
- */
-export function mul(v: Vec2, k: number): Vec2 {
-  return [v[0] * k, v[1] * k];
 }
 
 /**
@@ -112,22 +148,12 @@ export function mix(p1: Vec2, p2: Vec2, t = 0.5): Vec2 {
  * note: d can be negative
  * ```
  */
-export function offsetByDist(p1: Vec2, p2: Vec2, d: number): Vec2 {
-  const unitvec = normalize(vecFromPositions(p1, p2));
-  const v = mul(unitvec, d);
-  const p = add(p1, v);
-  return p;
-}
-
-/**
- * ```raw
- * Return a point that lies distance d away from p1, in the direction of p2.
- * note: d can be negative
- * ```
- */
 export function offset(p1: Vec2, p2: Vec2, d: number): Vec2 {
   if (Math.abs(d) < 0.000000001) {
     return p1;
+  }
+  if (dist(p1, p2) < 0.00000001) {
+    return p2;
   }
   const unitvec = unitvecFromPositions(p1, p2);
   const v = mul(unitvec, d);
@@ -140,10 +166,10 @@ export function offset(p1: Vec2, p2: Vec2, d: number): Vec2 {
  * The points where a line from p1 would tangent a circle at center p2 with radius r
  *
  * Returns 2 points as list [p1, p2] or
- * returns empty list [] if no tangentpoint exist. (it means p1 is inside the circle)
+ * returns empty list [] if no tangentpoint exist. (it means p is inside the circle)
  * ```
  */
-function tangentPoints(p: Vec2, c: Vec2, r: number): Vec2[] {
+export function tangentPoints(p: Vec2, c: Vec2, r: number): Vec2[] {
   //https://math.stackexchange.com/questions/543496/how-to-find-the-equation-of-a-line-tangent-to-a-circle-that-passes-through-a-g
 
   //r is radius of circle with center c
@@ -179,17 +205,6 @@ function tangentPoints(p: Vec2, c: Vec2, r: number): Vec2[] {
 }
 
 /**
- * Returns two vectors.
- * The vectors are pointing from p1 to the tangent points of circle p2 with radius r
- */
-function tangentVecs(p1: Vec2, p2: Vec2, r: number): Vec2[] {
-  const [tp1, tp2] = tangentPoints(p1, p2, r);
-  const v1 = vecFromPositions(p1, tp1);
-  const v2 = vecFromPositions(p1, tp2);
-  return [v1, v2];
-}
-
-/**
  * Return either vector v1 or v2
  *
  * whichever points in the direction most similar to the direciton of vector v
@@ -199,56 +214,6 @@ export function mostSimilarVec(v1: Vec2, v2: Vec2, v: Vec2): Vec2 {
   const s2 = directionSimilarity(v, v2);
   const v_mostsimilar = s1 > s2 ? v1 : v2;
   return v_mostsimilar;
-}
-
-/**
- * ```raw
- * Return a vector.
- * The vector from p1 tangent to circle at p2 with radius r.
- * There are two such vectors but this function return the one most similar to the direction of vector v.
- *```
- */
-export function tangentVecSimilarTo(
-  p1: Vec2,
-  p2: Vec2,
-  r: number,
-  v: Vec2
-): Vec2 {
-  const [v1, v2] = tangentVecs(p1, p2, r);
-  return mostSimilarVec(v1, v2, v);
-}
-
-/**
- * Return the minimum value and its index in vector vec
- * (return value: Infinity if vec=[])
- */
-export function minimum(vec: number[]): { value: number; index: number } {
-  let index = -1;
-  let value = Infinity;
-  for (const [i, v] of vec.entries()) {
-    if (v < value) {
-      value = v;
-      index = i;
-    }
-  }
-  const r = { value, index };
-  return r;
-}
-
-/**
- * Return the maximum value and its index in vector vec
- * * (return value: -Infinity if vec=[])
- */
-export function maximum(vec: number[]): { value: number; index: number } {
-  let index = -1;
-  let value = -Infinity;
-  for (const [i, v] of vec.entries()) {
-    if (v > value) {
-      value = v;
-      index = i;
-    }
-  }
-  return { value, index };
 }
 
 /**
@@ -303,80 +268,31 @@ export function intersectTwoCircles(
 }
 
 /**
+ * intersectTwoCircles but pick the point (of the two points) nearest to targetpoint
+ */
+export function intersectPoint(
+  p1: Vec2,
+  r1: number,
+  p2: Vec2,
+  r2: number,
+  targetpoint: Vec2
+): Vec2 {
+  const ps = intersectTwoCircles(p1, r1, p2, r2);
+  return nearestPointOfPoints(ps, targetpoint);
+}
+
+/**
  * perpendicular Clockwise
  */
-function perpendicularCW(v: Vec2): Vec2 {
+export function perpendicularCW(v: Vec2): Vec2 {
   return [v[1], -v[0]];
 }
 
 /**
  * perpendicular Counter Clockwise
  */
-function perpendicularCCW(v: Vec2): Vec2 {
+export function perpendicularCCW(v: Vec2): Vec2 {
   return [-v[1], v[0]];
-}
-
-/**
- * ```raw
- * Return a point adjusted_p the ship can move to that avoids the circle c with radius r
- *
- * 1. If moving will NOT put ship inside: just move
- * 2. IF INSIDE:
- *  2.1 if near edge: go diagonal (land on circumference) in the direction most similar to desired_p
- *  2.2 if further in: go straight outward from circle center
- * 3. IF OUTSIDE:
- *  3.1 (if step1 wasnt triggered) go along tangent direction most similar to desired_p
- *```
- */
-export function avoidCircle(
-  position: Vec2,
-  desired_p: Vec2,
-  c: Vec2,
-  r: number
-): Vec2 {
-  const p_moved = offset(
-    position,
-    desired_p,
-    Math.min(20, dist(position, desired_p))
-  );
-  if (dist(c, p_moved) > r) {
-    //moving wont put ship inside.. just move.
-    return p_moved;
-  }
-
-  const dir_desired = unitvecFromPositions(position, desired_p);
-  //const dir_center = unitvecFromPositions(position, c);
-  const tps = tangentPoints(position, c, r);
-  if (tps.length === 0) {
-    //inside.
-    if (dist(c, position) > r - 20) {
-      //Ship is pretty close to circumference, there exists 2 "diagonal" moves to get outside
-      //choose the one most similar to dir_desired
-      const ps = intersectTwoCircles(c, r, position, 20);
-      const dir_diag0 = unitvecFromPositions(position, ps[0]);
-      const dir_diag1 = unitvecFromPositions(position, ps[1]);
-      const dir_diag = mostSimilarVec(dir_diag0, dir_diag1, dir_desired);
-
-      const p_diag = add(position, mul(dir_diag, 20));
-      return p_diag;
-    } else {
-      //otherwise straight out
-      return offset(c, position, r);
-    }
-  } else {
-    //outside, there exists 2 tangent points
-    //choose the one most similar to dir_desired
-    const dir_tangent0 = unitvecFromPositions(position, tps[0]);
-    const dir_tangent1 = unitvecFromPositions(position, tps[1]);
-    const s0 = directionSimilarity(dir_tangent0, dir_desired);
-    const s1 = directionSimilarity(dir_tangent1, dir_desired);
-    const p_tangent = s0 > s1 ? tps[0] : tps[1];
-
-    //const p_tangent_moved = offset(position, p_tangent, Math.min(20, dist(position, p_tangent)));
-
-    const p_tangent_moved = offset(position, p_tangent, 20);
-    return p_tangent_moved;
-  }
 }
 
 /**
@@ -506,7 +422,7 @@ export function circleFrom3points(
  * the inverse sum of distances between this data point and the other data points
  * ```
  */
-export function distanceWeightedMean(points: Vec2[]): Vec2 {
+export function distanceWeightedMean(points: Vec2s): Vec2 {
   //https://encyclopediaofmath.org/wiki/Distance-weighted_mean
   if (points.length === 1) {
     return points[0];

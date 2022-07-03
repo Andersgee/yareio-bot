@@ -199,9 +199,6 @@ function evalBattle1tick(
     (s, i) => s.energy + consolidated_defenderchange[i]
   );
 
-  //console.log("resulting_energy_attackers:",resulting_energy_attackers)
-  //console.log("resulting_energy_defenders: ",resulting_energy_defenders)
-
   const resulting_attackers = attackers
     .map((s, i) => ({
       index: s.index,
@@ -216,9 +213,6 @@ function evalBattle1tick(
       energy: resulting_energy_defenders[i],
     }))
     .filter((s) => s.energy >= 0);
-
-  //console.log("resulting_attackers:",resulting_attackers)
-  //console.log("resulting_defenders: ",resulting_defenders)
 
   return [resulting_attackers, resulting_defenders];
 }

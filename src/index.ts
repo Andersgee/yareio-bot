@@ -1,22 +1,15 @@
 import move from "./move/move";
 import energize from "./energize/energize";
 import sendcommands from "./sendcommands";
-import gamestage from "./gamestage";
-import explode from "./ability/explode";
 import sendendgamecommands from "./sendendgamecommands";
-import collections from "./collections";
 
 function main() {
-  if (collections.enemyships.length === 0 || collections.myships.length === 0) {
-    sendendgamecommands();
-  } else {
-    gamestage();
-    const [targetpositions, nfarmers, nmidfarmers] = move();
-    const targets = energize(nfarmers, nmidfarmers);
-    const explodeindexes = explode();
-    sendcommands(targetpositions, targets, explodeindexes);
-  }
+  memory.Npathcalls = 0;
+  const targetps = move();
+  const targets = energize();
+  sendcommands(targetps, targets);
+  console.log(`tick ${tick}, Npathcalls: ${memory.Npathcalls}`);
 }
 
 //console.log(Object.keys(globalThis));
-main();
+sendendgamecommands() || main();

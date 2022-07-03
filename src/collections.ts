@@ -10,7 +10,8 @@ function getCollections(): Collections {
   const outposts = getOutposts();
   const stars = getStars();
   const { myships, enemyships } = getShips();
-  const info = getInfo(playerids, outposts);
+  const pylons = getPylons();
+  const info = getInfo(playerids, outposts, pylons);
 
   return {
     playerids,
@@ -21,25 +22,44 @@ function getCollections(): Collections {
     myships,
     enemyships,
     info,
+    pylons,
   };
 }
 
 function getShapes(): Shapes {
-  const me = base.shape;
-  const enemy = enemy_base.shape;
-  return { me, enemy };
+  const bases = getBases();
+
+  //const me = base.shape;
+  //const enemy = enemy_base.shape;
+  return { me: bases.me.shape, enemy: bases.enemy.shape };
 }
 
 function getBases(): Bases {
+  const playerids = getPlayerIds();
+
+  //base_zxq.player_id
+  //base_a2c.player_id
+  const myBase = base_zxq.player_id === playerids.me ? base_zxq : base_a2c;
+  const notMyBase = base_zxq.player_id === playerids.me ? base_a2c : base_zxq;
+  //console.log("base_zxq.player_id", base_zxq.player_id);
+
   return {
-    me: base,
-    enemy: enemy_base,
+    me: myBase,
+    enemy: notMyBase,
+    middle: base_p89,
+    big: base_nua,
   };
 }
 
 function getOutposts(): Outposts {
   return {
-    middle: outpost,
+    middle: outpost_mdo,
+  };
+}
+
+function getPylons(): Pylons {
+  return {
+    middle: pylon_u3p,
   };
 }
 
@@ -161,25 +181,39 @@ function getShips() {
 }
 
 function getStars(): Stars {
-  const dist_base2zxq = dist(base.position, star_zxq.position);
-  const dist_base2a1c = dist(base.position, star_a1c.position);
+  const bases = getBases();
+  const dist_base2zxq = dist(bases.me.position, star_zxq.position);
+  const dist_base2a2c = dist(bases.me.position, star_a2c.position);
   //const dist_base2p89 = vec.dist(base.position, star_p89.position)
 
   const stars = {
     me: star_zxq,
     middle: star_p89,
-    enemy: star_a1c,
+    enemy: star_a2c,
+    big: star_nua,
   };
 
-  if (dist_base2a1c < dist_base2zxq) {
-    stars.me = star_a1c;
+  if (dist_base2a2c < dist_base2zxq) {
+    stars.me = star_a2c;
     stars.enemy = star_zxq;
   }
   return stars;
 }
 
-function getInfo(playerids: Playerids, outposts: Outposts) {
+function getInfo(
+  playerids: Playerids,
+  outposts: Outposts,
+  pylons: Pylons
+): Info {
   const outpostcontrolIsMe = playerids.me === outposts.middle.control;
   const outpostcontrolIsEnemy = playerids.enemy === outposts.middle.control;
-  return { outpostcontrolIsMe, outpostcontrolIsEnemy };
+
+  const pyloncontrolIsMe = playerids.me === pylons.middle.control;
+  const pyloncontrolIsEnemy = playerids.enemy === pylons.middle.control;
+  return {
+    outpostcontrolIsMe,
+    outpostcontrolIsEnemy,
+    pyloncontrolIsMe,
+    pyloncontrolIsEnemy,
+  };
 }

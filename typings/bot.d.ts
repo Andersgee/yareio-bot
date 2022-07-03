@@ -6,25 +6,9 @@ declare type Graph = Map<number, Vec>;
 declare const collections: Collections;
 declare const points: Points;
 
-declare type target = Ship | Base | Outpost | Star;
+declare type target = Ship | Base | Outpost | Star | Pylon | Vec2;
 declare type targets = target[];
 
-interface Points {
-  homefarm: Vec2[];
-  middlefarm: Vec2[];
-  middlefarm_outside: Vec2[];
-  middle: {
-    me: Vec2;
-    between: Vec2;
-    enemy: Vec2;
-  };
-  middle_outside: {
-    me: Vec2;
-    between: Vec2;
-    enemy: Vec2;
-  };
-}
-
 interface Collections {
   playerids: Playerids;
   shapes: Shapes;
@@ -34,17 +18,7 @@ interface Collections {
   myships: Ships;
   enemyships: Ships;
   info: Info;
-}
-
-interface Collections {
-  playerids: Playerids;
-  shapes: Shapes;
-  bases: Bases;
-  outposts: Outposts;
-  stars: Stars;
-  myships: Ships;
-  enemyships: Ships;
-  info: Info;
+  pylons: Pylons;
 }
 
 interface Ship_m {
@@ -119,32 +93,41 @@ interface Ship extends Spirit {
 
 declare type Ships = Ship[];
 
-interface Info {
+type Info = {
   outpostcontrolIsMe: boolean;
   outpostcontrolIsEnemy: boolean;
-}
+  pyloncontrolIsMe: boolean;
+  pyloncontrolIsEnemy: boolean;
+};
 
-interface Shapes {
+type Shapes = {
   [me: string]: string;
   [enemy: string]: string;
-}
+};
 
-interface Playerids {
+type Playerids = {
   me: string;
   enemy: string;
-}
+};
 
-interface Stars {
+type Stars = {
   me: Star;
-  middle: Star;
   enemy: Star;
-}
+  middle: Star;
+  big: Star;
+};
 
-interface Bases {
-  [me: string]: Base;
-  [enemy: string]: Base;
-}
+type Bases = {
+  me: Base;
+  enemy: Base;
+  middle: Base;
+  big: Base;
+};
 
-interface Outposts {
+type Outposts = {
   middle: Outpost;
-}
+};
+
+type Pylons = {
+  middle: Outpost;
+};

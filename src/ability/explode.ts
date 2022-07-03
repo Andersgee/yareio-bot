@@ -1,13 +1,15 @@
 import collections from "../collections";
 import { isWithinDist, sum } from "../vec";
 
+const EXPLODE_RANGE = 160;
+
 export default function explode(): Vec {
   const { myships, enemyships } = collections;
 
   const explodeindexes: Vec = [];
   for (const ship of myships) {
     const enemiesInExplodeRange = enemyships.filter((s) =>
-      isWithinDist(s.position, ship.position, 160)
+      isWithinDist(s.position, ship.position, EXPLODE_RANGE)
     );
 
     const dmgdealt = sum(

@@ -7,13 +7,28 @@ declare const memory: {
   gamestage: number;
   enemyIsSquareRush: boolean;
   enemyWasNearMyBase: boolean;
+  Npathcalls: number;
 }; //Empty object. Use it to store values across ticks
-declare const base: Base; //object, Your base
-declare const enemy_base: Base; //object, Enemy base
+
+declare const fragments: Fragment[]; //object, base
+
+//declare const base: Base; //object, Your base
+//declare const enemy_base: Base; //object, Enemy base
+
+declare const base_zxq: Base; //object, base
+declare const base_a2c: Base; //object, base
+declare const base_p89: Base; //object, base
+declare const base_nua: Base; //object, base
+
 declare const star_zxq: Star; //object, Top-left corner star
-declare const star_a1c: Star; //object, Bottom-right corner star
+declare const star_a2c: Star; //object, Bottom-right corner star
 declare const star_p89: Star; //object, Star in the middle
-declare const outpost: Outpost; //object,
+declare const star_nua: Star; //big star
+
+declare const pylon_u3p: Pylon;
+
+//declare const outpost: Outpost; //object,
+declare const outpost_mdo: Outpost; //object,
 declare const my_spirits: Spirit[]; //array,
 declare const spirits: Record<string, Spirit>; //object, Contains all spirits. Access them by their id – spirits[‘jane_7’]
 declare const tick: number; //Current game tick (e.g. 75). 1 tick = 600ms
@@ -82,10 +97,10 @@ declare interface Spirit {
    * ```raw
    * transfers energy to target.
    * range: 200 units.
-   * one of three things can happen:
+   * one of four things can happen:
    *
    * #1. target is self:
-   * Self gain spirit.size (from a star).
+   * Self gain spirit.size (from a star or from fragment. prioritizes taking from fragment).
    *
    * #2. target is friendly spirit or base:
    * Self lose spirit.size.
@@ -94,9 +109,14 @@ declare interface Spirit {
    * #3. target is enemy spirit or base:
    * Self lose spirit.size.
    * Target lose spirit.size*2.
+   *
+   * #4 target is a point
+   * Self lose spirit.size.
+   * put the energy on the ground, later ships can energize self to take from it.
+   *
    * ```
    */
-  energize: (target: Spirit | Base | Outpost | Star) => void;
+  energize: (target: Spirit | Base | Outpost | Star | Vec2 | Pylon) => void;
 
   /**
    * ```raw
@@ -123,9 +143,10 @@ declare interface Spirit {
   divide: () => void;
   /**
    * ```raw
-   * Only for squares.
+   * All shapes can jump.
+   *
    * Teleports spirit to target location.
-   * cost: distance/5.
+   * cost = distance/4 + (size^2) / 4
    *
    * target can not be (in either x or y)
    * - within 50 distance from base/outpost
@@ -200,7 +221,7 @@ declare interface Base {
    * Decrease by one every tick the base is attacked into negative energy.
    * ```
    */
-  hp: number;
+  //hp: number;
 
   /**
    * Sight
@@ -227,6 +248,13 @@ declare interface Base {
    * not mentioned in docs.
    */
   current_spirit_cost: number;
+  /**
+   * ```raw
+   * id of the player controlling the outpost
+   * for example: "jane"
+   * ```
+   */
+  control: string;
 }
 
 //Outpost
@@ -329,4 +357,28 @@ declare interface Star {
    * not mentioned in docs.
    */
   collision_radius: number;
+}
+
+declare interface Fragment {
+  position: Vec2;
+  energy: number;
+}
+
+declare interface Pylon {
+  id: string;
+  position: Vec2;
+  size: number;
+  /**
+   * ```raw
+   * id of the player controlling the outpost
+   * for example: "jane"
+   * ```
+   */
+  control: string;
+  range: number;
+  structure_type: string;
+  energy: number;
+  energy_capacity: number;
+  collision_radius: number;
+  sight: Sight;
 }

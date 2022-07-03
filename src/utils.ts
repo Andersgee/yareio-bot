@@ -3,7 +3,7 @@ import collections from "./collections";
 
 /**
  * ```raw
- * The minimum required energy a star needs to sustain itself at n farmers (farming half the time)
+ * The minimum required energy a star needs to sustain itself at n farmers (farming each tick)
  *
  * sustain means:
  * 1. star.energy<1000: grow by atleast 1
@@ -16,9 +16,9 @@ export function sustainableStarEnergy(
   shipsize: number
 ): number {
   if (star.energy === 1000) {
-    return (n * 0.5 * shipsize - 2) / 0.02;
+    return (n * shipsize - 2) / 0.02;
   } else {
-    return (n * 0.5 * shipsize - 1) / 0.02;
+    return (n * shipsize - 1) / 0.02;
   }
 }
 /**
@@ -111,25 +111,39 @@ export function isEmpty(ship: Ship): boolean {
   return ship.energy === 0;
 }
 
-export function stargain(starenergy: number): number {
-  return Math.round(2 + 0.02 * starenergy);
-}
-
-/**
- * The maximum number of farmers (taking energy half the time) possible at star max energy without star losing energy.
- */
-export function maxStarFarmers(star: Star, shipsize: number): number {
-  return Math.floor(stargain(star.energy_capacity) / (0.5 * shipsize));
-}
-
-/**
- * The maximum number of farmers (taking energy half the time) to still have star grow by atleast 1 each tick.
- */
-export function sustainableStarFarmers(star: Star, shipsize: number): number {
-  if (star.energy === 1000) {
-    return Math.floor(stargain(star.energy) / (0.5 * shipsize));
+function star_gain(star: Star) {
+  if (star.energy_capacity == 3000) {
+    return 3 + 0.03 * star.energy;
   } else {
-    return Math.floor((stargain(star.energy) - 1) / (0.5 * shipsize));
+    return 2 + 0.02 * star.energy;
+  }
+}
+
+function star_gain_max(star: Star) {
+  if (star.energy_capacity == 3000) {
+    return 3 + 0.03 * star.energy_capacity;
+  } else {
+    return 2 + 0.02 * star.energy_capacity;
+  }
+}
+
+/**
+ * ```raw
+ * The maximum number of farmers (farming each tick) possible at star max energy without star losing energy.
+ * ```
+ */
+export function maxStarSelfers(star: Star, shipsize: number): number {
+  return Math.floor(star_gain_max(star) / shipsize);
+}
+
+/**
+ * The maximum number of farmers (farming each tick) to still have star grow by atleast 1 each tick.
+ */
+export function sustainableStarSelfers(star: Star, shipsize: number): number {
+  if (star.energy === star.energy_capacity) {
+    return Math.floor(star_gain(star) / shipsize);
+  } else {
+    return Math.floor((star_gain(star) - 1) / shipsize);
   }
 }
 
@@ -207,39 +221,6 @@ export function distanceWeightedMeanPosition(ships: Ships): Vec2 {
   return distanceWeightedMean(points);
 }
 
-/*
-function sum(v){
-  let sum = 0;
-  for (const x of v) {
-    sum += x;
-  }
-  return sum;
-}
-
-function meanposition(ps) {
-  //average position of ships, but weighted toward ships with more energy
-  const x = sum(ps.map((p) => p[0]));
-  const y = sum(ps.map((p) => p[1]));
-  return [x / ps.length, y / ps.length];
-}
-*/
-/*
-function stargain(starenergy) {
-  return 2 + 0.02 * starenergy;
-}
-
-function n_sustainable_starfarmorders(starenergy, shipsize) {
-  const gain = stargain(starenergy);
-  for (let n = 1; n < 100; n++) {
-    const expected_stargain = gain - n * shipsize;
-    if (expected_stargain < 1) {
-      return n - 1;
-    }
-  }
-  return 0;
-}
-*/
-
 /**
  * True if any in ships isWithinDist d, default d=200
  */
@@ -304,4 +285,19 @@ export function isNearStar(s: Ship): boolean {
 
 export function notNearStar(s: Ship): boolean {
   return !isNearStar(s);
+}
+
+export function controlIsMe(id: string): boolean {
+  const { playerids } = collections;
+  return id === playerids.me;
+}
+
+export function controlIsEnemy(id: string): boolean {
+  const { playerids } = collections;
+  return id === playerids.enemy;
+}
+
+export function controlIsNeutral(id: string): boolean {
+  const { playerids } = collections;
+  return id !== playerids.enemy && id != playerids.me;
 }
