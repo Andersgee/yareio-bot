@@ -13,7 +13,8 @@ import {
 
 /**
  * ```raw
- * Return a point adjusted_p the ship can move to that avoids the circle c with radius r
+ * Return a point the ship can move to that avoids the circle c with radius r
+ * argument position is the current position
  *
  * 1. If moving will NOT put ship inside: just move
  * 2. IF INSIDE:

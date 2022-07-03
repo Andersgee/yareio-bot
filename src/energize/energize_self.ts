@@ -1,14 +1,50 @@
 import collections from "../collections";
 import { ships_not_in } from "../find";
-import { maxStarSelfers, notFull, sustainableStarSelfers } from "../utils";
+import {
+  gainFromSelfing,
+  maxStarSelfers,
+  notFull,
+  sustainableStarSelfers,
+  sustainableStarSelfingAmount,
+  transferamount,
+} from "../utils";
 import { isWithinDist } from "../vec";
 
+/**
+ * If a spirit can harvest from a star or from a fragment, it will prioritize the fragment.
+ */
 export default function energize_self(targets: targets, energizing: Vec): void {
   const { stars } = collections;
   energize_self_star(targets, energizing, stars.big);
   energize_self_star(targets, energizing, stars.middle);
   energize_self_star(targets, energizing, stars.me);
   energize_self_star(targets, energizing, stars.enemy);
+
+  for (const fragment of fragments) {
+    energize_self_fragment(targets, energizing, fragment);
+  }
+}
+
+function energize_self_fragment(
+  targets: targets,
+  energizing: Vec,
+  fragment: Fragment
+) {
+  const { myships } = collections;
+
+  const myshipsnearfragment = ships_not_in(myships, energizing).filter((s) =>
+    isWithinDist(fragment.position, s.position)
+  );
+
+  let currentFragmentEnergy = fragment.energy * 1;
+
+  for (const ship of myshipsnearfragment) {
+    if (notFull(ship) && currentFragmentEnergy > 0) {
+      targets[ship.index] = ship; //energize self
+      energizing.push(ship.index);
+      currentFragmentEnergy -= gainFromSelfing(ship);
+    }
+  }
 }
 
 function energize_self_star(
@@ -23,19 +59,19 @@ function energize_self_star(
   */
 
   const { myships } = collections;
-  const shipsize = myships[0].size;
-  const selfers_max = sustainableStarSelfers(star, shipsize);
 
   const myshipsnearstar = ships_not_in(myships, energizing).filter((s) =>
     isWithinDist(star.position, s.position)
   );
 
-  let selfers_count = 0;
+  let currentExtraStarEnergy = sustainableStarSelfingAmount(star);
+
   for (const ship of myshipsnearstar) {
-    if (notFull(ship) && selfers_count < selfers_max) {
+    const transferedEnergy = gainFromSelfing(ship);
+    if (notFull(ship) && currentExtraStarEnergy - transferedEnergy > 0) {
       targets[ship.index] = ship; //energize self
       energizing.push(ship.index);
-      selfers_count += 1;
+      currentExtraStarEnergy -= transferedEnergy;
     }
   }
 }

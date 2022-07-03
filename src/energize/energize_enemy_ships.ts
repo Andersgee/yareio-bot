@@ -1,5 +1,5 @@
 import collections from "../collections";
-import { sortByShipenergy } from "../find";
+import { ships_not_in, sortByShipenergy } from "../find";
 import { attackdmg, notEmpty, lossFromAttacking } from "../utils";
 
 /**
@@ -14,7 +14,9 @@ export default function energize_enemy_ships(
   const assumeNheals = 0;
   for (const enemyship of sortByShipenergy(enemyships)) {
     //get all my ships that are in range of this enemyship
-    const myshipsInRange = enemyship.nearbyenemies;
+    //const myshipsInRange = enemyship.nearbyenemies; //override any previous order
+    const myshipsInRange = ships_not_in(enemyship.nearbyenemies, energizing); //dont override
+
     //const potentialHeal = sum(enemyship.nearbyfriends.map(transferamount));
 
     const enemyHealth = enemyship.energy - lossFromAttacking(enemyship);

@@ -3,7 +3,7 @@ import energize_self from "./energize_self";
 import energize_enemy_structures from "./energize_enemy_structures";
 import energize_neutral_structures from "./energize_neutral_structures";
 import energize_bases_from_starships from "./energize_bases_from_starships";
-
+import energize_friends_in_need from "./energize_friends_in_need";
 /**
  * ```raw
  * The general idea is:
@@ -30,8 +30,9 @@ export default function energize(): targets {
   const targets: targets = [];
   const energizing: Vec = [];
   const attacking: Vec = [];
-  energize_enemy_ships(targets, energizing, attacking);
   energize_self(targets, energizing);
+  energize_enemy_ships(targets, energizing, attacking);
+  energize_friends_in_need(targets, energizing, attacking);
 
   energize_enemy_structures(targets, energizing);
   energize_neutral_structures(targets, energizing);

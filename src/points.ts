@@ -62,11 +62,7 @@ function pointsOfInterest() {
   const b3 = offset(bases.big.position, b2, D);
 
   //outpost
-  const o1 = offset(
-    outposts.middle.position,
-    controlIsMe(bases.me.control) ? bases.enemy.position : bases.me.position, //always "forward"
-    D
-  );
+  const o1 = offset(outposts.middle.position, stars.middle.position, D);
 
   //attack
   const a1 = intersectPoint(

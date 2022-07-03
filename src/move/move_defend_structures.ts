@@ -3,6 +3,7 @@ import { controlIsMe, meanposition, notEmpty } from "../utils";
 import { dist, isWithinDist, offset } from "../vec";
 import { D, BLOCK_RANGE } from "../constants";
 import { ships_not_in, ship_closest, ship_closest_to_point } from "../find";
+import { avoidCircle } from "../positioning";
 
 export default function move_defend_structures(
   targetps: Vec2s,
@@ -23,10 +24,14 @@ function move_unblock_base_spawning(
   const { enemyships, myships } = collections;
   if (!controlIsMe(base.control)) return;
 
-  if (base.energy < 2 * base.current_spirit_cost) return;
+  //dont bother chasing unless I can make 2 ships.
+  if (
+    base.energy < Math.min(base.energy_capacity, 2 * base.current_spirit_cost)
+  )
+    return;
 
-  const enemyshipsBlockingSpawn = enemyships.filter((s) =>
-    isWithinDist(s.position, base.position, BLOCK_RANGE)
+  const enemyshipsBlockingSpawn = enemyships.filter(
+    (s) => isWithinDist(s.position, base.position, BLOCK_RANGE + 1) //a small margin
   );
 
   const possibleDefenders = myships.filter(
@@ -43,7 +48,12 @@ function move_unblock_base_spawning(
       const point = interceptPoint(base, enemy);
       const defender = ship_closest_to_point(availableDefenders, point);
 
-      targetps[defender.index] = point;
+      targetps[defender.index] = avoidCircle(
+        defender.position,
+        point,
+        base.position,
+        base.collision_radius
+      );
       moving.push(defender.index);
       defenderTotalEnergy += defender.energy;
       defending.push(defender.index);

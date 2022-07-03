@@ -2,6 +2,16 @@ import collections from "./collections";
 import { ships_not_in } from "./find";
 import { sum } from "./vec";
 
+type Combateval = {
+  myAdvantage: number;
+  meIsLastStanding: boolean;
+  myEnergycost: number;
+  enemyEnergycost: number;
+  myDeadShipsCost: number;
+  enemyDeadShipsCost: number;
+  myValueLoss: number;
+  enemyValueLoss: number;
+};
 /**
  * ```raw
  * Evaluate (to the end) what happens if ships attack each other.
@@ -12,16 +22,7 @@ import { sum } from "./vec";
 export default function combateval(
   myships: Ships,
   enemyships: Ships
-): {
-  myAdvantage: number;
-  meIsLastStanding: boolean;
-  myEnergycost: number;
-  enemyEnergycost: number;
-  myDeadShipsCost: number;
-  enemyDeadShipsCost: number;
-  myValueLoss: number;
-  enemyValueLoss: number;
-} {
+): Combateval {
   let [myships_m, enemyships_m] = evalBattle1tick(myships, enemyships);
 
   let someoneCanAttack =

@@ -49,7 +49,7 @@ export default function move(): Vec2s {
 function move_poststrat(targetps: Vec2s, moving: Vec, poststrating: Vec) {
   const { myships, stars, bases, outposts } = collections;
   for (const ship of ships_not_in(myships, moving)) {
-    targetps[ship.index] = offset(ship.position, points.a5, D);
+    targetps[ship.index] = offset(ship.position, points.o1, D);
     moving.push(ship.index);
     poststrating.push(ship.index);
   }

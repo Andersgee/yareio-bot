@@ -2,26 +2,6 @@ import { sum, distanceWeightedMean, isWithinDist } from "./vec";
 import collections from "./collections";
 
 /**
- * ```raw
- * The minimum required energy a star needs to sustain itself at n farmers (farming each tick)
- *
- * sustain means:
- * 1. star.energy<1000: grow by atleast 1
- * 2. star.energy=1000: not decrease
- * ```
- */
-export function sustainableStarEnergy(
-  star: Star,
-  n: number,
-  shipsize: number
-): number {
-  if (star.energy === 1000) {
-    return (n * shipsize - 2) / 0.02;
-  } else {
-    return (n * shipsize - 1) / 0.02;
-  }
-}
-/**
  * Return 0 If I dont have outpost, else return the outpost energy
  */
 export function myOutpostEnergy(): number {
@@ -147,6 +127,24 @@ export function sustainableStarSelfers(star: Star, shipsize: number): number {
   }
 }
 
+/**
+ * The amount ships can take from star and still have it grow.
+ */
+export function sustainableStarSelfingAmount(star: Star): number {
+  if (star.energy === star.energy_capacity) {
+    return Math.floor(star_gain(star));
+  } else {
+    return Math.floor(star_gain(star) - 1);
+  }
+}
+
+/**
+ * simply `star.energy`
+ */
+export function maxStarSelfingAmount(star: Star): number {
+  return star.energy;
+}
+
 export function outpostdmg(outpost: Outpost): number {
   return outpost.energy < 500
     ? Math.min(2, outpost.energy)
@@ -181,6 +179,15 @@ export function attackdmg(ship: Ship): number {
 export function lossFromAttacking(ship: Ship): number {
   //ship.size, but only as much energy as it has.
   return Math.min(ship.size, ship.energy);
+}
+
+/**
+ * essentially ship.size, except when its almost full in which case its less.
+ *
+ */
+export function gainFromSelfing(ship: Ship): number {
+  //ship.size, but only as much energy as it has.
+  return Math.min(ship.size, ship.energy_capacity - ship.energy);
 }
 
 /**
