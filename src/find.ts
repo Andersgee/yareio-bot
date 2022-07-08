@@ -67,6 +67,25 @@ export function sortByNearestDistance(ships: Ships, targetpoint: Vec2): Ships {
     );
 }
 
+function isMovingToHealComparator(a: Ship, b: Ship) {
+  const A = memory.movingToHealIds.includes(a.id);
+  const B = memory.movingToHealIds.includes(b.id);
+  if (A && !B) {
+    return -1;
+  }
+  if (!A && B) {
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * Moving to heal first. uses memory.isMovingToHealComparator
+ */
+export function sortByIsMovingToHeal(ships: Ships): Ships {
+  return ships.slice().sort(isMovingToHealComparator);
+}
+
 /**
  * Biggest distance first, as compared to ship.position to targetpoint
  */
@@ -128,6 +147,13 @@ export function not_in(ship: Ship, indexes: Vec): boolean {
  */
 export function shipFromIndex(ships: Ships, i: number): Ship | undefined {
   return ships.find((s) => s.index === i);
+}
+
+/**
+ * Return the ship with index i (if it exists)
+ */
+export function shipFromId(ships: Ships, id: string): Ship | undefined {
+  return ships.find((s) => s.id === id);
 }
 
 /**

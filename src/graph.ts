@@ -1,7 +1,7 @@
 import { falses, newVec, popfirst, pushfirst, dist, minimum, any } from "./vec";
 import { shipFromIndex } from "./find";
 
-import collections from "./collections";
+import { collections } from "./collections";
 const G = constructGraph(collections.myships);
 export default G;
 

@@ -1,3 +1,4 @@
+import { canEnergize } from "./utils";
 import {
   directionSimilarity,
   dist,
@@ -11,6 +12,32 @@ import {
   unitvecFromPositions,
 } from "./vec";
 
+/**
+ * essentially avoidCircle() but call it with myShip and enemyShip instead.
+ *
+ * Will properly avoid locked ship (with increased range) aswell.
+ */
+export function avoidEnemy(
+  myShip: Ship,
+  myShip_desired_p: Vec2,
+  enemyShip: Ship
+): Vec2 {
+  if (enemyShip.locked) {
+    return avoidCircle(
+      myShip.position,
+      myShip_desired_p,
+      enemyShip.position,
+      Math.min(300, enemyShip.range + 25) //locked ones will grow next turn (instead of moving)
+    );
+  } else {
+    return avoidCircle(
+      myShip.position,
+      myShip_desired_p,
+      enemyShip.position,
+      enemyShip.range + 20
+    );
+  }
+}
 /**
  * ```raw
  * Return a point the ship can move to that avoids the circle c with radius r

@@ -1,63 +1,83 @@
-import collections from "../collections";
+import { collections } from "../collections";
 import { ships_not_in } from "../find";
-import { notEmpty, controlIsNeutral } from "../utils";
-import { isWithinDist } from "../vec";
+import { notEmpty, controlIsNeutral, canEnergize } from "../utils";
 
 export default function energize_neutral_structures(
-  targets: targets,
+  targets: Target[],
   energizing: Vec
 ): void {
-  energize_neutral_bases(targets, energizing);
-  energize_neutral_outposts(targets, energizing);
-  //energize_neutral_pylons(targets, energizing);
-}
+  const { bases, outposts, pylons } = collections;
 
-function energize_neutral_bases(targets: targets, energizing: Vec): void {
-  const { myships, bases } = collections;
   for (const base of [bases.big, bases.enemy, bases.me, bases.middle]) {
-    if (!controlIsNeutral(base.control)) continue;
-    const myshipsNearBase = myships.filter((s) =>
-      isWithinDist(s.position, base.position)
-    );
-    for (const ship of ships_not_in(myshipsNearBase, energizing)) {
-      if (notEmpty(ship)) {
-        targets[ship.index] = base;
-        energizing.push(ship.index);
-      }
-    }
+    energize_neutral_base(targets, energizing, base);
   }
-}
 
-function energize_neutral_outposts(targets: targets, energizing: Vec): void {
-  const { myships, outposts } = collections;
   for (const outpost of [outposts.middle]) {
-    if (!controlIsNeutral(outpost.control)) continue;
+    energize_neutral_outpost(targets, energizing, outpost);
+  }
+  /*
+  for (const pylon of [pylons.middle]) {
+    energize_neutral_pylon(targets, energizing, pylon);
+  }
+  */
+}
 
-    const myshipsNearBase = myships.filter((s) =>
-      isWithinDist(s.position, outpost.position)
-    );
-    for (const ship of ships_not_in(myshipsNearBase, energizing)) {
-      if (notEmpty(ship)) {
-        targets[ship.index] = outpost;
-        energizing.push(ship.index);
-      }
+function energize_neutral_base(
+  targets: Target[],
+  energizing: Vec,
+  base: Base
+): void {
+  if (!controlIsNeutral(base.control)) return;
+  const { myships } = collections;
+
+  const myshipsNearBase = ships_not_in(myships, energizing).filter((s) =>
+    canEnergize(s, base)
+  );
+
+  for (const ship of myshipsNearBase) {
+    if (notEmpty(ship)) {
+      targets[ship.index] = base;
+      energizing.push(ship.index);
     }
   }
 }
 
-function energize_neutral_pylons(targets: targets, energizing: Vec): void {
-  const { myships, pylons } = collections;
-  for (const pylon of [pylons.middle]) {
-    if (!controlIsNeutral(pylon.control)) continue;
+function energize_neutral_outpost(
+  targets: Target[],
+  energizing: Vec,
+  outpost: Outpost
+): void {
+  if (!controlIsNeutral(outpost.control)) return;
 
-    const myshipsNearBase = myships.filter((s) =>
-      isWithinDist(s.position, pylon.position)
-    );
-    for (const ship of ships_not_in(myshipsNearBase, energizing)) {
-      if (notEmpty(ship)) {
-        targets[ship.index] = pylon;
-        energizing.push(ship.index);
-      }
+  const { myships } = collections;
+  const myshipsNearOutpost = ships_not_in(myships, energizing).filter((s) =>
+    canEnergize(s, outpost)
+  );
+
+  for (const ship of myshipsNearOutpost) {
+    if (notEmpty(ship)) {
+      targets[ship.index] = outpost;
+      energizing.push(ship.index);
+    }
+  }
+}
+
+function energize_neutral_pylon(
+  targets: Target[],
+  energizing: Vec,
+  pylon: Pylon
+): void {
+  if (!controlIsNeutral(pylon.control)) return;
+  const { myships } = collections;
+
+  const myshipsNearPylon = ships_not_in(myships, energizing).filter((s) =>
+    canEnergize(s, pylon)
+  );
+
+  for (const ship of myshipsNearPylon) {
+    if (notEmpty(ship)) {
+      targets[ship.index] = pylon;
+      energizing.push(ship.index);
     }
   }
 }

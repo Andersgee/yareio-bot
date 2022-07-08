@@ -1,4 +1,4 @@
-import collections from "../collections";
+import { collections } from "../collections";
 import { isWithinDist, sum } from "../vec";
 
 const EXPLODE_RANGE = 160;

@@ -1,4 +1,4 @@
-import collections from "./collections";
+import { collections } from "./collections";
 import { isWithinDist, offset } from "./vec";
 import { D } from "./constants";
 

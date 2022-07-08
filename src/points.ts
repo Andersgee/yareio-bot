@@ -1,4 +1,4 @@
-import collections from "./collections";
+import { collections } from "./collections";
 import { dist, intersectPoint, offset } from "./vec";
 import { D } from "./constants";
 import { controlIsMe } from "./utils";

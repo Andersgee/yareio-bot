@@ -1,9 +1,9 @@
-import collections from "../collections";
+import { collections } from "../collections";
 import { ships_in, ships_not_in } from "../find";
-import { transferamount } from "../utils";
+import { canEnergize, transferamount } from "../utils";
 
 export default function energize_friends_in_need(
-  targets: targets,
+  targets: Target[],
   energizing: Vec,
   attacking: Vec
 ): void {
@@ -12,7 +12,7 @@ export default function energize_friends_in_need(
 }
 
 function heal_attackers_from_nearby_friends(
-  targets: targets,
+  targets: Target[],
   energizing: Vec,
   attacking: Vec
 ): void {
@@ -21,7 +21,13 @@ function heal_attackers_from_nearby_friends(
   const myAttackingShips = ships_in(myships, attacking);
 
   for (const myAttacker of myAttackingShips) {
-    const shipFriends = ships_not_in(myAttacker.nearbyfriends, energizing);
+    const shipFriends300 = ships_not_in(
+      myAttacker.nearbyfriends300,
+      energizing
+    );
+    const shipFriends = shipFriends300.filter((s) =>
+      canEnergize(s, myAttacker)
+    );
     let requiredHeal =
       myAttacker.energy_capacity -
       myAttacker.energy +

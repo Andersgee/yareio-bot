@@ -4,6 +4,7 @@ import energize_enemy_structures from "./energize_enemy_structures";
 import energize_neutral_structures from "./energize_neutral_structures";
 import energize_bases_from_starships from "./energize_bases_from_starships";
 import energize_friends_in_need from "./energize_friends_in_need";
+import { collections } from "../collections";
 /**
  * ```raw
  * The general idea is:
@@ -26,17 +27,25 @@ import energize_friends_in_need from "./energize_friends_in_need";
  * 6. energize bases from from starships (chain)
  * ```
  */
-export default function energize(): targets {
-  const targets: targets = [];
+export default function energize(orders: Orders): void {
   const energizing: Vec = [];
   const attacking: Vec = [];
-  energize_self(targets, energizing);
-  energize_enemy_ships(targets, energizing, attacking);
-  energize_friends_in_need(targets, energizing, attacking);
+  if (tick < 27) {
+    special_earlygame(orders);
+    return;
+  }
+  energize_self(orders.targets, energizing);
+  energize_enemy_ships(orders.targets, energizing, attacking);
+  energize_friends_in_need(orders.targets, energizing, attacking);
 
-  energize_enemy_structures(targets, energizing);
-  energize_neutral_structures(targets, energizing);
-  energize_bases_from_starships(targets, energizing);
+  energize_enemy_structures(orders.targets, energizing);
+  energize_neutral_structures(orders.targets, energizing);
+  energize_bases_from_starships(orders.targets, energizing);
+}
 
-  return targets;
+function special_earlygame(orders: Orders) {
+  const { myships, stars } = collections;
+  for (const ship of myships) {
+    orders.targets[ship.index] = stars.me;
+  }
 }

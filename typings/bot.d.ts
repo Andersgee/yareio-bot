@@ -1,13 +1,17 @@
-declare type Vec2s = Vec2[];
-
 declare type Vec = number[];
 declare type Graph = Map<number, Vec>;
 
-declare const collections: Collections;
-declare const points: Points;
+declare type Target = Ship | Base | Outpost | Star | Pylon | Vec2;
 
-declare type target = Ship | Base | Outpost | Star | Pylon | Vec2;
-declare type targets = target[];
+declare type Orders = {
+  moving: Vec;
+  farmPositioned: Vec;
+  defPositioned: Vec;
+  attackPositioned: Vec;
+  targetps: Vec2[];
+  targets: Target[];
+  avoiding: Vec;
+};
 
 interface Collections {
   playerids: Playerids;
@@ -49,6 +53,10 @@ interface Ship extends Spirit {
    * Friendly ships in range 200 (without self).
    */
   nearbyfriends: Ships;
+  /**
+   * Friendly ships in range 300 (without self).
+   */
+  nearbyfriends300: Ships;
 
   /**
    * Friendly ships in range 20 (including self).
@@ -84,6 +92,16 @@ interface Ship extends Spirit {
    * Enemy ships in range 260.
    */
   nearbyenemies260: Ships;
+
+  /**
+   * Enemy ships in range 300.
+   */
+  nearbyenemies300: Ships;
+
+  /**
+   * Enemy ships in range 320.
+   */
+  nearbyenemies320: Ships;
 
   /**
    * Enemy ships in 400 range.

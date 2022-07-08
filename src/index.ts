@@ -5,10 +5,22 @@ import sendendgamecommands from "./sendendgamecommands";
 
 function main() {
   memory.Npathcalls = 0;
-  const targetps = move();
-  const targets = energize();
-  sendcommands(targetps, targets);
-  console.log(`tick ${tick}, Npathcalls: ${memory.Npathcalls}`);
+  memory.movingToHealIds = memory.movingToHealIds ? memory.movingToHealIds : [];
+
+  const orders: Orders = {
+    targets: [],
+    targetps: [],
+    moving: [],
+    farmPositioned: [],
+    defPositioned: [],
+    attackPositioned: [],
+    avoiding: [],
+  };
+
+  move(orders);
+  energize(orders);
+  sendcommands(orders.targetps, orders.targets);
+  //console.log(`tick ${tick}, Npathcalls ${memory.Npathcalls}`);
 }
 
 //console.log(Object.keys(globalThis));

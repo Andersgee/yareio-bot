@@ -1,7 +1,7 @@
 import { dist, isWithinDist, minimum } from "./vec";
 
 const collections = getCollections();
-export default collections;
+export { collections };
 
 function getCollections(): Collections {
   const playerids = getPlayerIds();
@@ -88,7 +88,10 @@ function getShips() {
       isWithinDist(ship.position, s.position, 200)
     );
     ship.nearbyfriends = myships.filter(
-      (s) => s.index !== index && isWithinDist(ship.position, s.position, 200)
+      (s) => isWithinDist(ship.position, s.position, 200) && index !== s.index
+    );
+    ship.nearbyfriends300 = myships.filter(
+      (s) => isWithinDist(ship.position, s.position, 300) && index !== s.index
     );
     ship.nearbyfriends20 = myships.filter((s) =>
       isWithinDist(ship.position, s.position, 20)
@@ -111,6 +114,12 @@ function getShips() {
     );
     ship.nearbyenemies260 = enemyships.filter((s) =>
       isWithinDist(ship.position, s.position, 260)
+    );
+    ship.nearbyenemies300 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 300)
+    );
+    ship.nearbyenemies320 = enemyships.filter((s) =>
+      isWithinDist(ship.position, s.position, 320)
     );
     ship.nearbyenemies400 = enemyships.filter((s) =>
       isWithinDist(ship.position, s.position, 400)
@@ -136,7 +145,10 @@ function getShips() {
       isWithinDist(ship.position, s.position, 200)
     );
     ship.nearbyfriends = enemyships.filter(
-      (s) => s.index !== index && isWithinDist(ship.position, s.position, 200)
+      (s) => isWithinDist(ship.position, s.position, 200) && index !== s.index
+    );
+    ship.nearbyfriends300 = myships.filter(
+      (s) => isWithinDist(ship.position, s.position, 300) && index !== s.index
     );
 
     ship.nearbyfriends20 = enemyships.filter((s) =>
@@ -160,6 +172,9 @@ function getShips() {
     );
     ship.nearbyenemies260 = myships.filter((s) =>
       isWithinDist(ship.position, s.position, 260)
+    );
+    ship.nearbyenemies300 = myships.filter((s) =>
+      isWithinDist(ship.position, s.position, 300)
     );
     ship.nearbyenemies400 = myships.filter((s) =>
       isWithinDist(ship.position, s.position, 400)

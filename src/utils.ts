@@ -1,5 +1,5 @@
 import { sum, distanceWeightedMean, isWithinDist } from "./vec";
-import collections from "./collections";
+import { collections } from "./collections";
 
 /**
  * Return 0 If I dont have outpost, else return the outpost energy
@@ -109,7 +109,7 @@ function star_gain_max(star: Star) {
 
 /**
  * ```raw
- * The maximum number of farmers (farming each tick) possible at star max energy without star losing energy.
+ * The maximum number of farmers (farming each tick) possible at star max energy. ignoring sustainable.
  * ```
  */
 export function maxStarSelfers(star: Star, shipsize: number): number {
@@ -128,13 +128,13 @@ export function sustainableStarSelfers(star: Star, shipsize: number): number {
 }
 
 /**
- * The amount ships can take from star and still have it grow.
+ * The amount of energy that ships can take from star and still have it grow.
  */
 export function sustainableStarSelfingAmount(star: Star): number {
   if (star.energy === star.energy_capacity) {
-    return Math.floor(star_gain(star));
+    return star_gain(star);
   } else {
-    return Math.floor(star_gain(star) - 1);
+    return star_gain(star) - 1;
   }
 }
 
@@ -236,6 +236,30 @@ export function anyShipIsWithinDist(ships: Ships, p: Vec2, d = 200): boolean {
 }
 
 /**
+ * true if ship can reach any star.
+ *
+ * assuming range 300 if locked (even if not fully at 300 yet)
+ * and 200 if not locked
+ */
+export function canReachAnyStar(ship: Ship): boolean {
+  return ship.locked
+    ? anyStarIsWithinDist(ship.position, 300)
+    : anyStarIsWithinDist(ship.position, 200);
+}
+
+/**
+ * true if any star is within r of point
+ */
+export function anyStarIsWithinDist(point: Vec2, r: number): boolean {
+  return starsWithinDist(point, r).length > 0;
+}
+export function starsWithinDist(point: Vec2, r: number): Star[] {
+  const { stars } = collections;
+  const structures = [stars.big, stars.enemy, stars.me, stars.middle];
+  return structures.filter((s) => isWithinDist(point, s.position, r));
+}
+
+/**
  * ```raw
  * What a ship would cost to replace for enemy.
  *
@@ -294,17 +318,32 @@ export function notNearStar(s: Ship): boolean {
   return !isNearStar(s);
 }
 
-export function controlIsMe(id: string): boolean {
+export function controlIsMe(controlId: string): boolean {
   const { playerids } = collections;
-  return id === playerids.me;
+  return controlId === playerids.me;
 }
 
-export function controlIsEnemy(id: string): boolean {
+export function controlIsEnemy(controlId: string): boolean {
   const { playerids } = collections;
-  return id === playerids.enemy;
+  return controlId === playerids.enemy;
 }
 
-export function controlIsNeutral(id: string): boolean {
+export function controlIsNeutral(controlId: string): boolean {
   const { playerids } = collections;
-  return id !== playerids.enemy && id != playerids.me;
+  return controlId !== playerids.enemy && controlId != playerids.me;
+}
+
+/**
+ * check if ship can reach target
+ *
+ * `isWithinDist(ship.position, target.position, ship.range)` but allows target to be a Vec2 aswell.
+ */
+export function canEnergize(ship: Ship, target: Target): boolean {
+  const shipRange = ship.range;
+  if (Array.isArray(target)) {
+    //is just a Vec2 (without position property)
+    return isWithinDist(ship.position, target, shipRange);
+  } else {
+    return isWithinDist(ship.position, target.position, shipRange);
+  }
 }

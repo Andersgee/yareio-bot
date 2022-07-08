@@ -1,11 +1,18 @@
-import collections from "../collections";
+import { collections } from "../collections";
 import combateval from "../combateval";
 import { not_in } from "../find";
 import { avoidCircle } from "../positioning";
 import { enemyShipCost, isEmpty, myShipCost } from "../utils";
-import { any, dist, isWithinDist, offset, weightedmean } from "../vec";
+import {
+  any,
+  dist,
+  isWithinDist,
+  offset,
+  offsetmax20,
+  weightedmean,
+} from "../vec";
 
-export default function move_combat(targetps: Vec2s): void {
+export default function move_combat(targetps: Vec2[]): void {
   const alreadyHasOrders: Vec = [];
   clamp_movement(targetps);
 
@@ -18,9 +25,9 @@ const MINADVANTAGE = -1;
 const ATTACKDIST = 180;
 const BACKDIST = 220;
 
-function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
+function R200(targetps: Vec2[], alreadyHasOrders: Vec) {
   const { myships, enemyships } = collections;
-  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
+  const targetps_new: Vec2[] = new Array(targetps.length).fill(null);
 
   const enemyshipcost = enemyShipCost();
   const myshipcost = myShipCost();
@@ -94,9 +101,9 @@ function R200(targetps: Vec2s, alreadyHasOrders: Vec) {
   clamp_movement(targetps);
 }
 
-function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
+function R220(targetps: Vec2[], alreadyHasOrders: Vec) {
   const { myships, enemyships } = collections;
-  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
+  const targetps_new: Vec2[] = new Array(targetps.length).fill(null);
 
   const enemyshipcost = enemyShipCost();
   const myshipcost = myShipCost();
@@ -169,9 +176,9 @@ function R220(targetps: Vec2s, alreadyHasOrders: Vec) {
   clamp_movement(targetps);
 }
 
-function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
+function R240(targetps: Vec2[], alreadyHasOrders: Vec) {
   const { myships, enemyships } = collections;
-  const targetps_new: Vec2s = new Array(targetps.length).fill(null);
+  const targetps_new: Vec2[] = new Array(targetps.length).fill(null);
 
   const enemyshipcost = enemyShipCost();
   const myshipcost = myShipCost();
@@ -247,12 +254,11 @@ function R240(targetps: Vec2s, alreadyHasOrders: Vec) {
 /**
  * A Ship can only move 20 units. make targetps reflect that.
  */
-function clamp_movement(targetps: Vec2s) {
+function clamp_movement(targetps: Vec2[]) {
   const { myships, stars, outposts, bases, pylons } = collections;
   for (const [i, ship] of myships.entries()) {
     if (targetps[i]) {
-      const d = Math.min(20, dist(ship.position, targetps[i]));
-      targetps[i] = offset(ship.position, targetps[i], d);
+      targetps[i] = offsetmax20(ship.position, targetps[i]);
     } else {
       //its possible ship was never assigned at targetp but unlikely
       targetps[i] = ship.position;

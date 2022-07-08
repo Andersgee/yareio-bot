@@ -282,6 +282,20 @@ export function intersectPoint(
 }
 
 /**
+ * intersectTwoCircles but pick the point (of the two points) farthest away from targetpoint
+ */
+export function intersectPointFarthest(
+  p1: Vec2,
+  r1: number,
+  p2: Vec2,
+  r2: number,
+  targetpoint: Vec2
+): Vec2 {
+  const ps = intersectTwoCircles(p1, r1, p2, r2);
+  return farthestPointOfPoints(ps, targetpoint);
+}
+
+/**
  * perpendicular Clockwise
  */
 export function perpendicularCW(v: Vec2): Vec2 {
@@ -422,7 +436,7 @@ export function circleFrom3points(
  * the inverse sum of distances between this data point and the other data points
  * ```
  */
-export function distanceWeightedMean(points: Vec2s): Vec2 {
+export function distanceWeightedMean(points: Vec2[]): Vec2 {
   //https://encyclopediaofmath.org/wiki/Distance-weighted_mean
   if (points.length === 1) {
     return points[0];
@@ -450,7 +464,7 @@ export function distanceWeightedMean(points: Vec2s): Vec2 {
   }
 }
 
-export function weightedmean(points: Vec2s, weights: Vec): Vec2 {
+export function weightedmean(points: Vec2[], weights: Vec): Vec2 {
   const x = sum(points.map((p, i) => weights[i] * p[0]));
   const y = sum(points.map((p, i) => weights[i] * p[1]));
   const weightsum = sum(weights);
@@ -460,9 +474,18 @@ export function weightedmean(points: Vec2s, weights: Vec): Vec2 {
 /**
  * Return the point in the vector ps=[p1,p2,p2] that is closest to target point targetpoint
  */
-export function nearestPointOfPoints(ps: Vec2s, targetpoint: Vec2): Vec2 {
+export function nearestPointOfPoints(ps: Vec2[], targetpoint: Vec2): Vec2 {
   const d = ps.map((p) => dist(p, targetpoint));
   const i = minimum(d).index;
+  return ps[i];
+}
+
+/**
+ * Return the point in the vector ps=[p1,p2,p2] that is farthest away from point targetpoint
+ */
+export function farthestPointOfPoints(ps: Vec2[], targetpoint: Vec2): Vec2 {
+  const d = ps.map((p) => dist(p, targetpoint));
+  const i = maximum(d).index;
   return ps[i];
 }
 
@@ -537,4 +560,18 @@ export function intersectLineCircle(
     [x_1, y_1],
     [x_2, y_2],
   ];
+}
+
+/**
+ * smallest first
+ */
+export function sortAscending(v: Vec): Vec {
+  return v.slice().sort((a, b) => a - b);
+}
+
+/**
+ * biggest first
+ */
+export function sortDescending(v: Vec): Vec {
+  return v.slice().sort((a, b) => b - a);
 }

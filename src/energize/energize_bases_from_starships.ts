@@ -1,4 +1,4 @@
-import collections from "../collections";
+import { collections } from "../collections";
 import { ships_not_in, ship_is_in_ships, ship_is_not_in_ships } from "../find";
 import { constructGraph, path_firstavailable } from "../graph";
 import {
@@ -8,31 +8,124 @@ import {
   notEmpty,
   transferamount,
   isEmpty,
+  canEnergize,
 } from "../utils";
 import { isWithinDist } from "../vec";
+import { pointsLong } from "../pointsLong";
 
 export default function energize_bases_from_starships(
-  targets: targets,
+  targets: Target[],
   energizing: Vec
 ): void {
   const { stars, bases, myships } = collections;
 
-  energize_base_from_star_chain(targets, energizing, stars.me, bases.me);
-  energize_base_from_star_chain(targets, energizing, stars.big, bases.big);
-  energize_base_from_star_chain(targets, energizing, stars.enemy, bases.enemy);
-
-  energize_base_from_midfarm_point(
+  energize_base_when_in_both_base_and_star_range(
     targets,
     energizing,
-    stars.middle,
-    bases.middle
+    bases.me,
+    stars.me
+  );
+  energize_base_when_in_both_base_and_star_range(
+    targets,
+    energizing,
+    bases.enemy,
+    stars.enemy
+  );
+  energize_base_when_in_both_base_and_star_range(
+    targets,
+    energizing,
+    bases.middle,
+    stars.middle
   );
 
-  //targets[myships[0].index] = myships[2];
+  //"star.big -> ship -> fragment -> ship -> base.me" chain
+  energize_fragment_when_in_both_fragment_and_star_range(
+    targets,
+    energizing,
+    stars.big,
+    pointsLong.b2 //fragment point
+  );
+  energize_base_when_in_both_base_and_fragment_range(
+    targets,
+    energizing,
+    bases.me,
+    pointsLong.b2 //fragment point
+  );
 }
 
+function energize_base_when_in_both_base_and_fragment_range(
+  targets: Target[],
+  energizing: Vec,
+  base: Base,
+  fragmentPoint: Vec2
+): void {
+  const { myships } = collections;
+
+  const myshipsInRange = ships_not_in(myships, energizing).filter(
+    (s) => canEnergize(s, fragmentPoint) && canEnergize(s, base)
+  );
+
+  for (const ship of myshipsInRange) {
+    if (isFull(ship)) {
+      targets[ship.index] = base;
+      energizing.push(ship.index);
+    }
+  }
+
+  return;
+}
+
+function energize_fragment_when_in_both_fragment_and_star_range(
+  targets: Target[],
+  energizing: Vec,
+  star: Star,
+  fragmentPoint: Vec2
+): void {
+  const { myships } = collections;
+
+  const myshipsInRange = ships_not_in(myships, energizing).filter(
+    (s) => canEnergize(s, fragmentPoint) && canEnergize(s, star)
+  );
+
+  for (const ship of myshipsInRange) {
+    if (isFull(ship)) {
+      //energize position on "ground", will "merge" with any existing fragment around this general area
+      //TODO: find out what size this "area" is where it auto merges with existing fragment
+      targets[ship.index] = fragmentPoint;
+      energizing.push(ship.index);
+    }
+  }
+
+  return;
+}
+
+function energize_base_when_in_both_base_and_star_range(
+  targets: Target[],
+  energizing: Vec,
+  base: Base,
+  star: Star
+): void {
+  if (!controlIsMe(base.control)) return;
+  const { myships } = collections;
+
+  const myshipsInRange = ships_not_in(myships, energizing).filter(
+    (s) => canEnergize(s, base) && canEnergize(s, star)
+  );
+
+  for (const ship of myshipsInRange) {
+    if (isFull(ship)) {
+      targets[ship.index] = base; //energize base
+      energizing.push(ship.index);
+    }
+  }
+
+  return;
+}
+
+/*
+
 function energize_base_from_star_chain(
-  targets: targets,
+  targets: Target[],
   energizing: Vec,
   star: Star,
   base: Base
@@ -56,11 +149,11 @@ function energize_base_from_star_chain(
   const sending: Vec = [];
   const recieving: Vec = [];
   sources: for (const sourceShip of sourceShips) {
-    /** destination ships that can recieve at least one more transfer */
+    // destination ships that can recieve at least one more transfer
     const availableDestinationShips = ships_not_in(destinationShips, recieving);
     if (availableDestinationShips.length < 1) return;
 
-    /** prune away sources, desinations and those already sending or recieving */
+    // prune away sources, desinations and those already sending or recieving
     const ignoreIndexes = sourceShipsIndexes
       .concat(destinationShipsIndexes)
       .concat(sending)
@@ -109,28 +202,4 @@ function energize_base_from_star_chain(
 
   return;
 }
-
-function energize_base_from_midfarm_point(
-  targets: targets,
-  energizing: Vec,
-  star: Star,
-  base: Base
-): void {
-  const { myships } = collections;
-  if (!controlIsMe(base.control)) return;
-
-  const ships = ships_not_in(myships, energizing).filter(
-    (s) =>
-      isWithinDist(star.position, s.position) &&
-      isWithinDist(base.position, s.position)
-  );
-
-  for (const ship of ships) {
-    if (isFull(ship)) {
-      targets[ship.index] = base; //energize base
-      energizing.push(ship.index);
-    }
-  }
-
-  return;
-}
+*/

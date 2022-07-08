@@ -1,22 +1,26 @@
-import collections from "../collections";
+import { collections } from "../collections";
 import { ships_not_in, sortByShipenergy } from "../find";
-import { attackdmg, notEmpty, lossFromAttacking } from "../utils";
+import { attackdmg, notEmpty, lossFromAttacking, canEnergize } from "../utils";
 
 /**
  * Attack enemies in range, in a way that does not overkill an enemy.
  */
 export default function energize_enemy_ships(
-  targets: targets,
+  targets: Target[],
   energizing: Vec,
   attacking: Vec
 ): void {
   const { enemyships } = collections;
   const assumeNheals = 0;
   for (const enemyship of sortByShipenergy(enemyships)) {
-    //get all my ships that are in range of this enemyship
-    //const myshipsInRange = enemyship.nearbyenemies; //override any previous order
-    const myshipsInRange = ships_not_in(enemyship.nearbyenemies, energizing); //dont override
+    const myshipsInRange300 = ships_not_in(
+      enemyship.nearbyenemies300,
+      energizing
+    );
 
+    const myshipsInRange = myshipsInRange300.filter((myship) =>
+      canEnergize(myship, enemyship)
+    );
     //const potentialHeal = sum(enemyship.nearbyfriends.map(transferamount));
 
     const enemyHealth = enemyship.energy - lossFromAttacking(enemyship);

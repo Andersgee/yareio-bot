@@ -1,6 +1,8 @@
-import collections from "../collections";
-import { ships_not_in } from "../find";
+import { collections } from "../collections";
+import { ships_not_in, sortByIsMovingToHeal } from "../find";
 import {
+  canEnergize,
+  controlIsEnemy,
   gainFromSelfing,
   maxStarSelfers,
   notFull,
@@ -8,17 +10,32 @@ import {
   sustainableStarSelfingAmount,
   transferamount,
 } from "../utils";
-import { isWithinDist } from "../vec";
+import { isWithinDist, sum } from "../vec";
 
 /**
- * If a spirit can harvest from a star or from a fragment, it will prioritize the fragment.
+ * note: If a spirit can harvest from a star or from a fragment, it will prioritize the fragment.
  */
-export default function energize_self(targets: targets, energizing: Vec): void {
-  const { stars } = collections;
-  energize_self_star(targets, energizing, stars.big);
-  energize_self_star(targets, energizing, stars.middle);
-  energize_self_star(targets, energizing, stars.me);
-  energize_self_star(targets, energizing, stars.enemy);
+export default function energize_self(
+  targets: Target[],
+  energizing: Vec
+): void {
+  const { stars, bases } = collections;
+
+  /*
+  if (tick < 100) {
+    maybeBoostInstead(targets, energizing, stars.me);
+  }
+  */
+
+  const ignoreSustBigstar = controlIsEnemy(bases.big.control);
+  const ignoreSustMeStar = controlIsEnemy(bases.me.control);
+  const ignoreSustMiddleStar = controlIsEnemy(bases.middle.control);
+  const ignoreSustEnemyStar = controlIsEnemy(bases.enemy.control);
+
+  energize_self_star(targets, energizing, stars.big, ignoreSustBigstar);
+  energize_self_star(targets, energizing, stars.middle, ignoreSustMiddleStar);
+  energize_self_star(targets, energizing, stars.me, ignoreSustMeStar);
+  energize_self_star(targets, energizing, stars.enemy, ignoreSustEnemyStar);
 
   for (const fragment of fragments) {
     energize_self_fragment(targets, energizing, fragment);
@@ -26,14 +43,14 @@ export default function energize_self(targets: targets, energizing: Vec): void {
 }
 
 function energize_self_fragment(
-  targets: targets,
+  targets: Target[],
   energizing: Vec,
   fragment: Fragment
 ) {
-  const { myships } = collections;
+  const { myships, bases } = collections;
 
-  const myshipsnearfragment = ships_not_in(myships, energizing).filter((s) =>
-    isWithinDist(fragment.position, s.position)
+  const myshipsnearfragment = ships_not_in(myships, energizing).filter(
+    (s) => canEnergize(s, fragment.position) && canEnergize(s, bases.me)
   );
 
   let currentFragmentEnergy = fragment.energy * 1;
@@ -48,27 +65,44 @@ function energize_self_fragment(
 }
 
 function energize_self_star(
-  targets: targets,
+  targets: Target[],
   energizing: Vec,
-  star: Star
+  star: Star,
+  ignoreSust = false
 ): void {
-  /*
-  if (tick < 23) {
-    maybeBoostInstead(targets, energizing, star);
-  }
-  */
+  const { myships, bases } = collections;
 
-  const { myships } = collections;
-
-  const myshipsnearstar = ships_not_in(myships, energizing).filter((s) =>
-    isWithinDist(star.position, s.position)
+  const myshipsInRangeOfStar = sortByIsMovingToHeal(
+    ships_not_in(myships, energizing).filter((s) => canEnergize(s, star))
   );
 
   let currentExtraStarEnergy = sustainableStarSelfingAmount(star);
+  //I can actually take more because it will sustain 2 constant farmers at 900 aswell
+  //or in the case of big star: 9 constant farmers at 2900 energy
+  //however, we still want it to grow.
+  //so only 50 for normal stars and 66 for big stars to make sure it grows.
+  if (
+    star.energy_capacity === 1000 &&
+    star.energy > star.energy_capacity - 50
+  ) {
+    const additionalFarmable = star.energy - (star.energy_capacity - 50);
+    currentExtraStarEnergy += additionalFarmable;
+  } else if (
+    star.energy_capacity === 3000 &&
+    star.energy > star.energy_capacity - 66
+  ) {
+    const additionalFarmable = star.energy - (star.energy_capacity - 66);
+    currentExtraStarEnergy += additionalFarmable;
+  }
+  //some conditions here. in particular early game mid star farming
+  const ignoreSustainable = ignoreSust || myshipsInRangeOfStar.length === 1;
 
-  for (const ship of myshipsnearstar) {
+  for (const ship of myshipsInRangeOfStar) {
     const transferedEnergy = gainFromSelfing(ship);
-    if (notFull(ship) && currentExtraStarEnergy - transferedEnergy > 0) {
+    if (
+      notFull(ship) &&
+      (ignoreSustainable || currentExtraStarEnergy - transferedEnergy > 0)
+    ) {
       targets[ship.index] = ship; //energize self
       energizing.push(ship.index);
       currentExtraStarEnergy -= transferedEnergy;
@@ -76,21 +110,22 @@ function energize_self_star(
   }
 }
 
-function maybeBoostInstead(targets: targets, energizing: Vec, star: Star) {
+function maybeBoostInstead(targets: Target[], energizing: Vec, star: Star) {
   const { myships } = collections;
-  const shipsize = myships[0].size;
-  const selfers_sustainable_max = sustainableStarSelfers(star, shipsize);
-  const selfers_max = maxStarSelfers(star, shipsize);
-  const shipsNearStar = myships.filter((s) =>
-    isWithinDist(star.position, s.position)
-  );
-  const NavailableNearStar = shipsNearStar.length;
-  const NavailableSelfers = Math.min(selfers_max, NavailableNearStar);
 
-  if (NavailableSelfers > selfers_sustainable_max) {
-    for (const ship of shipsNearStar) {
-      targets[ship.index] = star; //energize star
-      energizing.push(ship.index);
-    }
+  const myshipsInRangeOfStar = ships_not_in(myships, energizing).filter((s) =>
+    canEnergize(s, star)
+  );
+
+  //half the time the ship would not take from the star
+  const sumEnergyTakenPerTick =
+    0.5 * sum(myshipsInRangeOfStar.map(gainFromSelfing));
+
+  const currentExtraStarEnergy = sustainableStarSelfingAmount(star);
+  if (sumEnergyTakenPerTick <= currentExtraStarEnergy) return; //no need
+
+  for (const ship of myshipsInRangeOfStar) {
+    targets[ship.index] = star; //boost star
+    energizing.push(ship.index);
   }
 }

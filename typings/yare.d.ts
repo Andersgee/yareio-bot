@@ -8,6 +8,7 @@ declare const memory: {
   enemyIsSquareRush: boolean;
   enemyWasNearMyBase: boolean;
   Npathcalls: number;
+  movingToHealIds: string[];
 }; //Empty object. Use it to store values across ticks
 
 declare const fragments: Fragment[]; //object, base
@@ -66,6 +67,18 @@ declare interface Spirit {
    * ```
    */
   size: number;
+
+  /**
+   * This spirits energize range
+   *
+   * Always 200 except for locked squares (which goes up to 300 by +25 each tick for 4 ticks)
+   */
+  range: number;
+
+  /**
+   * relevant for squares only
+   */
+  locked: boolean;
 
   /**energy_capacity is always size*10 */
   energy_capacity: number;
@@ -162,6 +175,21 @@ declare interface Spirit {
    * ```
    */
   explode: () => void;
+  /**
+   * ```raw
+   * Only for squares.
+   * increases range by 25 each tick up to 300. (4 ticks to go from 200 to 300)
+   * disables moving
+   * ```
+   */
+  lock: () => void;
+  /**
+   * ```raw
+   * Only for squares.
+   * allows ship to move again (on next turn or this?) and resets range to 200.
+   * ```
+   */
+  unlock: () => void;
   /**
    * display a message above the spirit
    */
@@ -325,7 +353,7 @@ declare interface Star {
   /**stars current energy */
   energy: number;
 
-  /**1000 */
+  /**1000 for normal, 3000 for big*/
   energy_capacity: number;
 
   /**
